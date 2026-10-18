@@ -1,0 +1,3765 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Motherhood</title>
+  <meta name="description" content="A calm voice-first postpartum companion.">
+  <meta name="theme-color" content="#F5EDE3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#231C18" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Motherhood">
+  <style>
+    :root {
+      color-scheme: light dark; /* native scrollbars match the theme */
+      --bg: #F5EDE3;        /* soft beige */
+      --surface: #FFFAF4;
+      --ink: #3E2C2A;       /* warm cocoa instead of black */
+      --muted: #7A655D;
+      --line: #E6D7C8;
+      --accent: #E8D5BF;    /* latte sand: the main button color */
+      --on-accent: #3E2C2A;
+      --ring: #D9A7B0;      /* a little pink, used sparingly */
+      --mine: #EDE1D3;
+      --alert: #9A3B35;
+      --moon: #D49A55;      /* honey moon and stars */
+      --star: #D9A066;
+      --wave: #C49A74;      /* caramel waves and bottle */
+      --sans: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+      --serif: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #231C18;      /* warm cocoa night */
+        --surface: #31271F;
+        --ink: #F4EAE0;
+        --muted: #BFAA9A;
+        --line: #46382F;
+        --accent: #DCC4A8;
+        --on-accent: #2A201B;
+        --ring: #E8B4BE;
+        --mine: #4A3B31;
+        --alert: #F4A39A;
+        --moon: #F5DCAE;
+        --star: #F8E6BF;
+        --wave: #D2B08C;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+    }
+    button, textarea { font: inherit; color: inherit; }
+
+    /* Background: a dotted nursery sky: moon, stars, a floating bottle, waves */
+    #village {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .app {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      height: 100dvh;
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+    }
+
+    .brand {
+      margin: 0;
+      padding: 14px 0 6px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    /* ---- conversation ---- */
+    .log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--muted) transparent;
+    }
+    .bubble {
+      max-width: 88%;
+      padding: 12px 16px;
+      border-radius: 20px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .bubble.assistant {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 6px;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--mine);
+      border-bottom-right-radius: 6px;
+    }
+    .bubble.error {
+      align-self: flex-start;
+      background: transparent;
+      border: 1px solid var(--alert);
+      color: var(--alert);
+      border-bottom-left-radius: 6px;
+    }
+    .typing { display: inline-flex; gap: 5px; padding: 16px 18px; }
+    .typing i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); opacity: .45;
+      animation: dot 1.2s infinite ease-in-out;
+    }
+    .typing i:nth-child(2) { animation-delay: .18s; }
+    .typing i:nth-child(3) { animation-delay: .36s; }
+    @keyframes dot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: .9; } }
+
+    /* ---- the big button ---- */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 8px 0 14px;
+    }
+    .greeting {
+      display: none;
+      margin: 0;
+      max-width: 22ch;
+      text-align: center;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 30px;
+      line-height: 1.25;
+    }
+    .talk {
+      position: relative;
+      width: 112px; height: 112px;
+      border: 0; border-radius: 50%;
+      background: var(--accent);
+      color: var(--on-accent);
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 600;
+      font-size: 17px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(30, 43, 58, .18);
+      transition: transform .15s ease, width .25s ease, height .25s ease;
+    }
+    .talk:active { transform: scale(.96); }
+    /* Voice states: a ring that pulses while she's speaking, and softly while the app reads aloud */
+    .talk::before {
+      content: "";
+      position: absolute; inset: -8px;
+      border-radius: 50%;
+      border: 3px solid var(--ring);
+      opacity: 0;
+      pointer-events: none;
+    }
+    body.listening .talk::before { animation: listen 1.2s ease-out infinite; }
+    body.speaking .talk::before { animation: listen 2.4s ease-out infinite; }
+    @keyframes listen {
+      0%   { transform: scale(.95); opacity: .9; }
+      100% { transform: scale(1.25); opacity: 0; }
+    }
+    .talk:focus-visible, .icon-btn:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    /* empty state: greeting + big centered button */
+    body.empty .log { display: none; }
+    body.empty .stage { flex: 1; }
+    .slogan {
+      display: none;
+      margin: -12px 0 0;
+      max-width: 28ch;
+      text-align: center;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 19px;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+    body.empty .greeting { display: block; }
+    body.empty .slogan { display: block; }
+    body.empty .talk { width: 200px; height: 200px; font-size: 27px; }
+    body.empty .talk::after {
+      content: "";
+      position: absolute; inset: -14px;
+      border-radius: 50%;
+      border: 2px solid var(--ring);
+      opacity: 0;
+      animation: breathe 5s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%   { transform: scale(.94); opacity: 0; }
+      40%  { opacity: .45; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+
+    /* ---- status + typing box ---- */
+    .status {
+      min-height: 22px;
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 15px;
+      color: var(--muted);
+    }
+    .compose {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .icon-btn {
+      flex: none;
+      width: 44px; height: 44px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .icon-btn svg { width: 22px; height: 22px; }
+    .icon-btn.send { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .icon-btn:disabled { opacity: .5; cursor: default; }
+    textarea {
+      flex: 1;
+      min-height: 44px;
+      max-height: 140px;
+      resize: none;
+      padding: 10px 16px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      font-size: 16px; /* 16px stops iPhones from zooming in */
+      line-height: 1.4;
+    }
+    textarea::placeholder { color: var(--muted); }
+
+    .crisis {
+      display: none;
+      margin: 0 0 10px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 2px solid var(--alert);
+      color: var(--alert);
+      background: var(--surface);
+      font-weight: 600;
+      text-align: center;
+    }
+    body.crisis-on .crisis { display: block; }
+    .disclaimer {
+      margin: 10px 0 12px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+
+    /* ---- guides sheet ---- */
+    .sheet {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; align-items: flex-end; justify-content: center;
+      background: rgba(40, 28, 24, .35);
+      padding: 0 0 env(safe-area-inset-bottom, 0px);
+    }
+    .sheet[hidden] { display: none; }
+    .sheet-panel {
+      width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto;
+      background: var(--surface); color: var(--ink);
+      border-radius: 24px 24px 0 0;
+      padding: 10px 18px 22px;
+      box-shadow: 0 -8px 30px rgba(40, 28, 24, .18);
+      animation: rise .28s ease-out;
+    }
+    @media (min-width: 640px) {
+      .sheet { align-items: center; }
+      .sheet-panel { border-radius: 24px; }
+    }
+    @keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .sheet-head { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+    .sheet-head h2 {
+      flex: 1; margin: 0; text-align: center;
+      font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 22px;
+    }
+    .sheet-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 0; background: transparent; cursor: pointer; display: grid; place-items: center;
+    }
+    .sheet-btn svg { width: 22px; height: 22px; }
+    .guide-list { display: grid; gap: 10px; padding-top: 4px; }
+    .guide-list[hidden], .guide-player[hidden] { display: none; }
+    .sheet-btn.is-hidden { visibility: hidden; }
+    .guide-item {
+      display: grid; gap: 2px; text-align: left;
+      padding: 14px 16px; border-radius: 16px;
+      border: 1px solid var(--line); background: var(--bg); cursor: pointer;
+    }
+    .guide-item:hover { border-color: var(--wave); }
+    .guide-name { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 19px; }
+    .guide-blurb { color: var(--muted); font-size: 15px; }
+    .guide-player { text-align: center; }
+    #guide-canvas {
+      width: min(300px, 78vw); aspect-ratio: 1; display: block; margin: 4px auto 8px;
+      background: var(--bg); border-radius: 20px;
+    }
+    .guide-step { margin: 0; color: var(--muted); font-size: 14px; }
+    .guide-caption {
+      margin: 6px auto 14px; max-width: 34ch; min-height: 3.2em;
+      font-family: var(--serif); font-size: 19px; line-height: 1.35;
+    }
+    .guide-nav { display: flex; gap: 10px; justify-content: center; }
+    .pill {
+      min-width: 112px; padding: 11px 20px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600;
+    }
+    .pill.quiet { background: transparent; border-color: var(--line); color: var(--ink); }
+    .pill:disabled { opacity: .4; cursor: default; }
+    .guide-yt {
+      display: inline-block; margin-top: 16px; color: var(--muted); font-size: 15px;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+    .guide-card {
+      align-self: flex-start; display: inline-flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 16px;
+    }
+    .guide-card-dots {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: radial-gradient(circle, var(--ring) 22%, transparent 24%) 0 0 / 6px 6px;
+    }
+    .sheet-btn:focus-visible, .guide-item:focus-visible, .pill:focus-visible, .guide-card:focus-visible, .guide-yt:focus-visible {
+      outline: 3px solid var(--ink); outline-offset: 2px;
+    }
+    body.sheet-open { overflow: hidden; }
+
+    /* ---- library ---- */
+    .lib-panel { max-width: 560px; }
+    .lib-intro { margin: 0 0 12px; text-align: center; color: var(--muted); font-family: var(--serif); font-style: italic; font-size: 17px; }
+    .lib-search {
+      width: 100%; padding: 12px 16px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; margin-bottom: 14px;
+    }
+    .lib-search:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    .lib-cat { margin: 18px 4px 8px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 20px; }
+    .lib-items { display: grid; gap: 8px; }
+    .lib-item {
+      display: grid; gap: 2px; text-align: left; padding: 12px 16px; border-radius: 16px;
+      border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer;
+    }
+    .lib-item:hover { border-color: var(--wave); }
+    .lib-item b { font-weight: 600; font-size: 16px; }
+    .lib-item span { color: var(--muted); font-size: 14px; }
+    .lib-empty { color: var(--muted); text-align: center; padding: 20px 0; }
+    .lib-article h3 { margin: 4px 0 4px; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 26px; line-height: 1.2; }
+    .lib-article .lib-blurb { margin: 0 0 14px; color: var(--muted); }
+    .lib-article h4 { margin: 18px 0 6px; font-size: 17px; font-weight: 700; }
+    .lib-article p { margin: 0 0 10px; line-height: 1.6; }
+    .lib-article ul { margin: 0 0 10px; padding-left: 20px; line-height: 1.55; }
+    .lib-article li { margin: 4px 0; }
+    .lib-help {
+      margin: 18px 0 8px; padding: 14px 16px; border-radius: 16px;
+      border: 1.5px solid var(--alert); background: var(--surface);
+    }
+    .lib-help h4 { margin: 0 0 6px; color: var(--alert); }
+    .lib-help ul { margin: 0; }
+    .lib-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 6px; }
+    .lib-source { margin-top: 14px; font-size: 13px; color: var(--muted); }
+    .wk-due { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 14px; color: var(--muted); font-size: 15px; }
+    .wk-due input { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+    .wk-card { padding: 18px; border-radius: 20px; background: var(--bg); border: 1px solid var(--line); text-align: center; }
+    .wk-num { margin: 0; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 40px; line-height: 1.1; }
+    .wk-size { margin: 4px 0 2px; font-family: var(--serif); font-size: 19px; }
+    .wk-len { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+    .wk-dot { width: 64px; height: 64px; margin: 10px auto 4px; border-radius: 50%;
+      background: radial-gradient(circle, var(--wave) 34%, transparent 36%) 0 0 / 8px 8px; transition: transform .4s ease; }
+    .wk-card .lib-sec { text-align: left; }
+    .wk-nav { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; }
+    .wk-nav input[type=range] { flex: 1; accent-color: var(--wave); }
+    .wk-nav .pill { min-width: 0; padding: 10px 16px; }
+    .wk-note { margin-top: 12px; font-size: 13px; color: var(--muted); text-align: center; }
+    .lib-item:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    /* ---- header, language ---- */
+    .top { position: relative; }
+    .lang-btn {
+      position: absolute; top: 8px; inset-inline-end: 4px;
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .lang-btn svg { width: 16px; height: 16px; }
+    .lang-menu {
+      position: absolute; top: 48px; inset-inline-end: 4px; z-index: 5; display: grid; gap: 4px; padding: 8px;
+      border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(40,28,24,.16);
+    }
+    .lang-menu[hidden] { display: none; }
+    .lang-menu button { padding: 10px 16px; border-radius: 10px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; text-align: start; cursor: pointer; }
+    .lang-menu button[aria-current="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+    .lang-btn:focus-visible, .lang-menu button:focus-visible, .myth-chip:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    html[lang="ar"] { --sans: "Noto Naskh Arabic", "Segoe UI", Tahoma, "Geeza Pro", sans-serif; --serif: "Noto Naskh Arabic", "Segoe UI", Tahoma, "Geeza Pro", serif; }
+    html[lang="ar"] body { line-height: 1.8; }
+    html[lang="ar"] .greeting, html[lang="ar"] .slogan, html[lang="ar"] .talk, html[lang="ar"] .sheet-head h2,
+    html[lang="ar"] .lib-cat, html[lang="ar"] .lib-article h3, html[lang="ar"] .guide-name, html[lang="ar"] .guide-card,
+    html[lang="ar"] .wk-num, html[lang="ar"] .lib-intro { font-style: normal; }
+    html[lang="ur"] { --sans: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif; --serif: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Urdu Typesetting", serif; }
+    html[lang="ur"] body { line-height: 2; }
+    html[lang="ur"] .greeting, html[lang="ur"] .slogan, html[lang="ur"] .talk, html[lang="ur"] .sheet-head h2,
+    html[lang="ur"] .lib-cat, html[lang="ur"] .lib-article h3, html[lang="ur"] .guide-name, html[lang="ur"] .guide-card,
+    html[lang="ur"] .wk-num, html[lang="ur"] .lib-intro, html[lang="ur"] .myth-chip { font-style: normal; }
+    html[lang="ur"] .talk { font-size: 20px; line-height: 1.6; }
+
+    .new-btn {
+      position: absolute; top: 8px; inset-inline-start: 4px;
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .new-btn[hidden] { display: none; }
+    .new-btn svg { width: 15px; height: 15px; }
+    .new-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    /* Zooming in (or a short screen): shrink the welcome screen so nothing gets cut off */
+    .stage { min-height: 0; }
+    @media (max-height: 640px) {
+      body.empty .talk::after { inset: -10px; }
+    }
+    @media (max-height: 460px) {
+      .slogan { display: none !important; }
+      .brand { padding: 8px 0 2px; }
+      .disclaimer { display: none; }
+    }
+    @media (max-width: 380px) {
+      .lang-btn span, .new-btn span { display: none; }
+    }
+    /* ---- myth or safe ---- */
+    .myth-chip {
+      display: none; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 18px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 16px;
+    }
+    body.empty .myth-chip { display: inline-flex; }
+    .myth-list { display: grid; gap: 12px; margin-top: 12px; }
+    .myth { padding: 16px; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
+    .myth h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; line-height: 1.35; }
+    .verdict { display: inline-block; margin-bottom: 8px; padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+    .verdict.no { background: color-mix(in srgb, var(--alert) 14%, transparent); color: var(--alert); }
+    .verdict.care { background: color-mix(in srgb, var(--moon) 22%, transparent); color: var(--ink); }
+    .verdict.yes { background: color-mix(in srgb, #6E9B7A 22%, transparent); color: var(--ink); }
+    .myth h4 { margin: 10px 0 2px; font-size: 15px; color: var(--muted); }
+    .myth p { margin: 0; line-height: 1.6; }
+    .myth .lib-actions { margin: 12px 0 0; }
+    .myth .pill { min-width: 0; padding: 9px 16px; font-size: 15px; }
+    .tr-note { margin: 10px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+
+    /* ---- listen (read aloud) ---- */
+    .listen-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+      border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .listen-btn svg { width: 15px; height: 15px; }
+    .listen-btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+    .bubble .listen-btn { display: flex; width: fit-content; margin-top: 10px; }
+    .listen-row { display: flex; justify-content: center; margin: 8px 0 4px; }
+    .listen-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    /* ---- sizes that flow with the screen height, so zooming in or out always fits ---- */
+    .stage { gap: clamp(10px, 3.4vh, 28px); }
+    .greeting { font-size: clamp(20px, 3.9vh, 30px); }
+    .slogan { font-size: clamp(14px, 2.4vh, 19px); }
+    body.empty .talk { width: clamp(96px, 25vh, 200px); height: clamp(96px, 25vh, 200px); font-size: clamp(16px, 3.4vh, 27px); }
+    html[lang="ur"] body.empty .talk { font-size: clamp(15px, 2.8vh, 22px); }
+
+    /* ---- voice settings ---- */
+    .vs-h { margin: 16px 4px 8px; font-size: 16px; font-weight: 700; }
+    .vs-list { display: grid; gap: 6px; max-height: 38dvh; overflow-y: auto; padding: 2px; }
+    .vs-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px;
+      border: 1px solid var(--line); background: var(--bg); cursor: pointer;
+    }
+    .vs-row[aria-checked="true"] { border-color: var(--wave); box-shadow: inset 0 0 0 1px var(--wave); }
+    .vs-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
+    .vs-row[aria-checked="true"] .vs-radio::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+    .vs-name { flex: 1; min-width: 0; }
+    .vs-name b { display: block; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+    .vs-name span { font-size: 13px; color: var(--muted); }
+    .vs-tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, #6E9B7A 22%, transparent); }
+    .vs-play { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .vs-seg { display: flex; gap: 6px; }
+    .vs-seg button {
+      flex: 1; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .vs-seg button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+    .vs-empty { margin: 4px; color: var(--muted); line-height: 1.6; }
+    .vs-row:focus-visible, .vs-play:focus-visible, .vs-seg button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    .lang-menu hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+
+    /* ---- voices from your village ---- */
+    .village-btn {
+      position: absolute; top: 8px; inset-inline-end: 84px;
+      width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%;
+      border: 1px solid var(--line); background: var(--surface); color: var(--ring); cursor: pointer;
+    }
+    .village-btn svg { width: 18px; height: 18px; }
+    .vv-grief { margin: 0 0 12px; text-align: center; font-size: 14px; color: var(--muted); }
+    .vv-people { display: grid; gap: 12px; }
+    .vv-person { padding: 14px; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
+    .vv-person h3 { margin: 0 0 8px; font-family: var(--serif); font-style: italic; font-size: 20px; }
+    .vv-clip { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+    .vv-clip span { flex: 1; color: var(--muted); font-size: 14px; }
+    .vv-small { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .vv-small.danger { color: var(--alert); }
+    .vv-small[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+    .vv-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .vv-rec { color: var(--alert); font-weight: 700; font-size: 14px; margin: 8px 0 0; }
+    .vv-add { margin-top: 14px; text-align: center; }
+    .vv-form { text-align: start; margin-top: 10px; }
+    .vv-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+    .vv-consent input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+    .vv-err { color: var(--alert); font-size: 14px; }
+    .vv-empty { text-align: center; color: var(--muted); }
+    .village-btn:focus-visible, .vv-small:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    @media (max-width: 380px) { .village-btn { inset-inline-end: 52px; } }
+
+    .vv-ai { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); display: grid; gap: 8px; justify-items: start; }
+    .vv-ai-on { margin: 0; font-weight: 700; color: var(--ink); }
+    .vv-ai-note { margin: 0; font-size: 13px; color: var(--muted); }
+    .vs-clone { padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .vs-clone span { flex: 1; min-width: 160px; }
+
+    /* ---- emergency ---- */
+    .em-btn {
+      position: absolute; top: 8px; inset-inline-start: 4px;
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+      border: 0; background: #B3261E; color: #fff; /* solid red, so it's easy to find in a hurry */
+      font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+    }
+    .em-btn svg { width: 15px; height: 15px; }
+    .new-btn { inset-inline-start: 120px; }
+    html[lang="ur"] .new-btn, html[lang="ar"] .new-btn { inset-inline-start: 104px; }
+    html[lang="tr"] .new-btn, html[lang="es"] .new-btn { inset-inline-start: 134px; }
+    @media (max-width: 520px) {
+      .em-btn span, .new-btn span { display: none; }
+      .em-btn { padding: 8px; } .new-btn { padding: 8px; inset-inline-start: 48px !important; }
+    }
+    button.crisis { display: none; width: 100%; font: inherit; font-weight: 600; cursor: pointer; }
+    body.crisis-on button.crisis { display: block; }
+    .em-sheet { z-index: 20; }
+    .em-panel { border-top: 4px solid var(--alert); }
+    .em-intro { margin: 0 0 12px; text-align: center; font-weight: 700; color: var(--alert); font-size: 17px; line-height: 1.5; }
+    .em-calls { display: grid; gap: 10px; }
+    .em-call {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: 18px;
+      background: #B3261E; color: #fff; text-decoration: none; font-weight: 800; font-size: 18px; /* deep red, white text: readable day and night */
+    }
+    .em-call small { font-weight: 600; font-size: 14px; opacity: .9; }
+    .em-call b { font-size: 24px; letter-spacing: .5px; direction: ltr; unicode-bidi: isolate; }
+    .em-call.soft { background: var(--surface); color: var(--ink); border: 1.5px solid var(--alert); }
+    .em-country { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; font-size: 14px; color: var(--muted); }
+    .em-country select { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+    .em-self { margin: 14px 0 6px; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--alert); line-height: 1.55; font-weight: 600; }
+    .em-h { margin: 16px 4px 6px; font-size: 16px; font-weight: 800; }
+    .em-list { margin: 0; padding-inline-start: 20px; line-height: 1.55; }
+    .em-list li { margin: 4px 0; }
+    .em-card { border-color: var(--alert) !important; color: var(--alert) !important; font-style: normal !important; }
+    .em-btn:focus-visible, .em-call:focus-visible, button.crisis:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    /* ---- companion features ---- */
+    .mh-field { display: grid; gap: 6px; margin: 10px 0; font-size: 14px; font-weight: 700; }
+    .mh-field .lib-search { margin: 0; }
+    .mh-langs { flex-wrap: wrap; margin: 10px 0; }
+    .mh-langs button, .vs-seg button[role=radio] { min-width: 0; }
+    .mh-nav { justify-content: center; margin-top: 16px; }
+    .today-card {
+      display: grid; gap: 4px; max-width: min(440px, 92vw); margin-top: clamp(8px, 2vh, 16px); padding: 12px 16px;
+      border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent);
+      color: var(--ink); text-align: start; cursor: pointer; font: inherit;
+    }
+    .today-card[hidden] { display: none; }
+    body:not(.empty) .today-card { display: none; }
+    .today-card b { font-family: var(--serif); font-style: italic; font-size: 17px; }
+    .today-now { font-size: 14px; line-height: 1.45; }
+    .today-tip { font-size: 13px; color: var(--muted); line-height: 1.45; }
+    .today-mood { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--ring); text-decoration: underline; text-underline-offset: 3px; }
+    .log-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .log-stat { display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); text-align: center; }
+    .log-stat b { font-size: 20px; }
+    .log-stat span { font-size: 12px; color: var(--muted); }
+    .log-last { margin: 8px 4px 0; color: var(--muted); font-size: 14px; }
+    .log-warn { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--alert); line-height: 1.5; font-size: 14px; }
+    .log-msg { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--wave); font-size: 14px; }
+    .log-tell { display: flex; gap: 8px; align-items: center; }
+    .log-tell .lib-search { margin: 0; flex: 1; min-width: 0; }
+    .log-tell .pill { min-width: 0; padding: 11px 16px; }
+    .log-quick { display: flex; flex-wrap: wrap; gap: 8px; }
+    .log-list .vv-clip span { color: var(--ink); }
+    .mood-lead { margin: 8px 0 2px; color: var(--muted); }
+    .mood-q { margin: 0 0 12px; font-family: var(--serif); font-size: 21px; line-height: 1.35; }
+    .mood-opts { display: grid; gap: 8px; margin-bottom: 12px; }
+    .mood-opt { text-align: start; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
+    .mood-opt:hover { border-color: var(--wave); }
+    .tour-text { margin: 8px 4px 14px; font-family: var(--serif); font-size: 20px; line-height: 1.45; text-align: center; min-height: 5.5em; }
+    .tour-dots { display: flex; justify-content: center; gap: 8px; }
+    .tour-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+    .tour-dots span.on { background: var(--wave); }
+    .today-card:focus-visible, .mood-opt:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    #msg::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 420px) { .compose .icon-btn { width: 40px; height: 40px; } .compose { gap: 6px; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body class="empty">
+  <canvas id="village" aria-hidden="true"></canvas>
+  <div class="app">
+    <header class="top">
+      <button class="em-btn" id="em-btn" type="button" aria-label="Emergency">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+        <span id="em-btn-text">Emergency</span>
+      </button>
+      <button class="new-btn" id="new-btn" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="new-text">New chat</span>
+      </button>
+      <h1 class="brand">Motherhood</h1>
+      <button class="village-btn" id="village-btn" type="button" aria-label="Village voices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+      </button>
+      <button class="lang-btn" id="lang-btn" type="button" aria-haspopup="true" aria-label="Language">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/></svg>
+        <span id="lang-code">EN</span>
+      </button>
+      <div class="lang-menu" id="lang-menu" hidden></div>
+    </header>
+
+    <main class="log" id="log" aria-live="polite"></main>
+
+    <section class="stage">
+      <p class="greeting">Ask me anything about motherhood.</p>
+      <p class="slogan">Treat me like your virtual village.</p>
+      <button class="talk" id="talk" type="button">Talk to me</button>
+    </section>
+
+    <button class="crisis" id="crisis" type="button" role="alert">
+      If you might hurt yourself or your baby, or you're seeing or hearing things that aren't there:
+      call your local emergency number now, or wake someone and don't stay alone.
+    </button>
+
+    <p class="status" id="status" aria-live="polite"></p>
+
+    <form class="compose" id="compose" autocomplete="off">
+      <button class="icon-btn" id="video" type="button" aria-label="Watch a video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="M15.5 10.5 21 7.5v9l-5.5-3"/></svg>
+      </button>
+      <button class="icon-btn" id="log-btn" type="button" aria-label="Baby log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4M11 2v3M13 2v3"/><path d="M9 5h6l1 4H8z"/><rect x="7" y="9" width="10" height="13" rx="3"/><path d="M10 14h4M10 17h4"/></svg>
+      </button>
+      <button class="icon-btn" id="library-btn" type="button" aria-label="Open the library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 7.5h7M8.5 11h5"/></svg>
+      </button>
+      <textarea id="msg" rows="1" maxlength="4000" placeholder="Type a question" aria-label="Type your question" enterkeyhint="send"></textarea>
+      <button class="icon-btn send" id="send" type="submit" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+      </button>
+    </form>
+
+    <p class="disclaimer">A guide, not a replacement for your doctor or midwife.</p>
+  </div>
+
+  <div class="sheet em-sheet" id="emergency" hidden>
+    <section class="sheet-panel em-panel" role="dialog" aria-modal="true" aria-labelledby="em-title">
+      <header class="sheet-head">
+        <span class="sheet-btn is-hidden" aria-hidden="true"></span>
+        <h2 id="em-title">Get help now</h2>
+        <button class="sheet-btn" id="em-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <p class="em-intro" id="em-intro"></p>
+      <div class="em-calls" id="em-calls"></div>
+      <label class="em-country"><span id="em-country-label"></span> <select id="em-country"></select></label>
+      <p class="em-self" id="em-self"></p>
+      <h3 class="em-h" id="em-h-mother"></h3>
+      <ul class="em-list" id="em-mother"></ul>
+      <h3 class="em-h" id="em-h-baby"></h3>
+      <ul class="em-list" id="em-baby"></ul>
+      <p class="tr-note" id="em-note"></p>
+    </section>
+  </div>
+  <div class="sheet" id="village-sheet" hidden>
+    <section class="sheet-panel lib-panel" role="dialog" aria-modal="true" aria-labelledby="vv-title">
+      <header class="sheet-head">
+        <span class="sheet-btn is-hidden" aria-hidden="true"></span>
+        <h2 id="vv-title">Voices from your village</h2>
+        <button class="sheet-btn" id="vv-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <p class="lib-intro" id="vv-intro"></p>
+      <p class="vv-grief" id="vv-grief"></p>
+      <div id="vv-people" class="vv-people"></div>
+      <div class="vv-add" id="vv-add">
+        <button class="pill" id="vv-add-btn" type="button"></button>
+        <form class="vv-form" id="vv-form" hidden>
+          <input id="vv-name" class="lib-search" type="text" maxlength="40" autocomplete="off">
+          <label class="vv-consent"><input type="checkbox" id="vv-consent"> <span id="vv-consent-text"></span></label>
+          <p class="vv-err" id="vv-err" hidden></p>
+          <div class="lib-actions"><button class="pill" type="submit" id="vv-save"></button><button class="pill quiet" type="button" id="vv-cancel"></button></div>
+        </form>
+      </div>
+    </section>
+  </div>
+  <div class="sheet" id="voice-sheet" hidden>
+    <section class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="voice-title">
+      <header class="sheet-head">
+        <span class="sheet-btn is-hidden" aria-hidden="true"></span>
+        <h2 id="voice-title">Voice</h2>
+        <button class="sheet-btn" id="voice-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <h3 class="vs-h" id="vs-clone-h">A loved one's voice (AI)</h3>
+      <div class="vs-clone" id="vs-clone"></div>
+      <h3 class="vs-h" id="vs-choose">Choose a voice</h3>
+      <div class="vs-list" id="vs-list" role="radiogroup" aria-labelledby="vs-choose"></div>
+      <p class="vs-empty" id="vs-empty" hidden></p>
+      <h3 class="vs-h" id="vs-speed-h">Speed</h3>
+      <div class="vs-seg" id="vs-speed" role="radiogroup" aria-labelledby="vs-speed-h"></div>
+      <h3 class="vs-h" id="vs-pitch-h">Pitch</h3>
+      <div class="vs-seg" id="vs-pitch" role="radiogroup" aria-labelledby="vs-pitch-h"></div>
+      <div class="lib-actions" style="justify-content:center">
+        <button class="pill" id="vs-try" type="button">Try it</button>
+        <button class="pill quiet" id="vs-reset" type="button">Reset to default</button>
+      </div>
+      <p class="tr-note" id="vs-note"></p>
+    </section>
+  </div>
+  <div class="sheet" id="myths" hidden>
+    <section class="sheet-panel lib-panel" role="dialog" aria-modal="true" aria-labelledby="myth-title">
+      <header class="sheet-head">
+        <span class="sheet-btn is-hidden" aria-hidden="true"></span>
+        <h2 id="myth-title">Myth or safe?</h2>
+        <button class="sheet-btn" id="myth-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <p class="lib-intro" id="myth-intro"></p>
+      <div class="lib-actions" style="justify-content:center;margin-top:0"><button class="pill" id="myth-ask" type="button">Ask about another tradition</button></div>
+      <p class="tr-note" id="myth-tr" hidden></p>
+      <div id="myth-list" class="myth-list"></div>
+    </section>
+  </div>
+  <div class="sheet" id="library" hidden>
+    <section class="sheet-panel lib-panel" role="dialog" aria-modal="true" aria-labelledby="lib-title">
+      <header class="sheet-head">
+        <button class="sheet-btn is-hidden" id="lib-back" type="button" aria-label="Back to the library">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6"/></svg>
+        </button>
+        <h2 id="lib-title">Library</h2>
+        <button class="sheet-btn" id="lib-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div id="lib-home">
+        <p class="lib-intro">Everything about feeding, diapers, sleep and you, in plain, gentle words.</p>
+        <input id="lib-search" class="lib-search" type="search" placeholder="Search, like 'formula' or 'sore nipples'" aria-label="Search the library">
+        <div id="lib-list"></div>
+      </div>
+      <article id="lib-article" class="lib-article" hidden></article>
+    </section>
+  </div>
+  <div class="sheet" id="guides" hidden>
+    <section class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <header class="sheet-head">
+        <button class="sheet-btn" id="guide-back" type="button" aria-label="All guides">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6"/></svg>
+        </button>
+        <h2 id="guide-title">Guides</h2>
+        <button class="sheet-btn" id="guide-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div id="guide-list" class="guide-list"></div>
+      <div id="guide-player" class="guide-player" hidden>
+        <canvas id="guide-canvas" aria-hidden="true"></canvas>
+        <p class="guide-step" id="guide-step"></p>
+        <p class="guide-caption" id="guide-caption" aria-live="polite"></p>
+        <div class="listen-row" id="guide-listen"></div>
+        <div class="guide-nav">
+          <button type="button" class="pill quiet" id="guide-prev">Back</button>
+          <button type="button" class="pill" id="guide-next">Next</button>
+        </div>
+        <a class="guide-yt" id="guide-yt" target="_blank" rel="noopener">Still unsure? Watch real videos on YouTube</a>
+      </div>
+    </section>
+  </div>
+  <script src="/i18n.js"></script>
+  <script src="/library.js"></script>
+  <script src="/myths.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const log = $("#log"), form = $("#compose"), input = $("#msg");
+    const statusEl = $("#status"), talkBtn = $("#talk"), videoBtn = $("#video"), sendBtn = $("#send");
+
+    // ---- Language: interface words are hand-written; longer content is translated by the AI ----
+    const I18N = window.MOTHERHOOD_I18N;
+    const LANGS = I18N.langs;
+    let LANG = (() => {
+      try { const s = localStorage.getItem("mh-lang"); if (s && I18N.t[s]) return s; } catch {}
+      const nav = (navigator.language || "en").slice(0, 2).toLowerCase();
+      return I18N.t[nav] ? nav : "en";
+    })();
+    function t(key, vars = {}) {
+      let s = (I18N.t[LANG] && I18N.t[LANG][key]) || I18N.t.en[key] || key;
+      for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(v); // every occurrence
+      return s;
+    }
+    // Saved translations: english text -> her language, kept on the phone.
+    const trCache = {};
+    function trStore(lang) {
+      if (!trCache[lang]) {
+        try { trCache[lang] = JSON.parse(localStorage.getItem("mh-tr-" + lang) || "{}"); } catch { trCache[lang] = {}; }
+        // Throw away saved translations in the wrong script (Hindi letters, or still English for Urdu/Arabic).
+        if (lang === "ur" || lang === "ar") {
+          const store = trCache[lang];
+          let removed = 0;
+          for (const [k, v] of Object.entries(store)) {
+            const arabic = (String(v).match(/[\u0600-\u06FF]/g) || []).length, latin = (String(v).match(/[A-Za-z]/g) || []).length;
+            if (/[\u0900-\u097F]/.test(v) || arabic <= latin) { delete store[k]; removed++; }
+          }
+          if (removed) { try { localStorage.setItem("mh-tr-" + lang, JSON.stringify(store)); } catch {} }
+        }
+      }
+      return trCache[lang];
+    }
+    function tx(text) { return LANG === "en" || !text ? text : trStore(LANG)[text] || text; }
+    const pendingTr = new Map();
+    // Make sure these strings are translated into the current language. Resolves true when done.
+    async function ensureTr(strings) {
+      if (LANG === "en") return true;
+      const lang = LANG, store = trStore(lang);
+      const missing = [...new Set(strings.filter((x) => x && !store[x]))];
+      if (!missing.length) return true;
+      const key = lang + "|" + missing.join("\u0001");
+      if (pendingTr.has(key)) return pendingTr.get(key);
+      const job = (async () => {
+        // Small batches, three at a time: each finishes quickly, and one slow batch doesn't hold up the rest.
+        const batches = [];
+        let cur = [], size = 0;
+        for (const m of missing) {
+          if (cur.length && (cur.length >= 8 || size + m.length > 1500)) { batches.push(cur); cur = []; size = 0; }
+          cur.push(m); size += m.length;
+        }
+        if (cur.length) batches.push(cur);
+        let anyOk = false;
+        const runOne = async (chunk) => {
+          try {
+            const res = await fetch("/api/translate", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ lang, items: chunk }),
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            chunk.forEach((src, j) => { if (data.items[j]) { store[src] = data.items[j]; anyOk = true; } });
+            try { localStorage.setItem("mh-tr-" + lang, JSON.stringify(store)); } catch {}
+          } catch {}
+        };
+        try {
+          const queue = batches.slice();
+          await Promise.all([0, 1, 2].map(async () => { while (queue.length) await runOne(queue.shift()); }));
+          return anyOk;
+        } finally { pendingTr.delete(key); }
+      })();
+      pendingTr.set(key, job);
+      return job;
+    }
+    const langListeners = [];
+    function onLang(fn) { langListeners.push(fn); }
+
+    // The conversation so far. Kept for the session so follow-ups make sense.
+    let history = [];
+    try { history = JSON.parse(sessionStorage.getItem("chat") || "[]"); } catch {}
+    let busy = false;
+    let crisisOpened = false; // the emergency screen opens by itself at most once per answer
+    const MAX_SEND = 20; // the server only uses the last 20 anyway; sending everything breaks long chats
+    let statusTimer;
+
+    const MAX_KEEP = 200; // messages kept on the phone for this session
+    function save() {
+      if (history.length > MAX_KEEP) history = history.slice(-MAX_KEEP);
+      try { sessionStorage.setItem("chat", JSON.stringify(history)); } catch {}
+    }
+    function refreshMode() { document.body.classList.toggle("empty", history.length === 0); }
+    function scrollDown() { log.scrollTop = log.scrollHeight; }
+
+    function say(text, sticky) {
+      statusEl.textContent = text;
+      clearTimeout(statusTimer);
+      if (!sticky) statusTimer = setTimeout(() => (statusEl.textContent = ""), 6000);
+    }
+    const quiet = () => say("", true);
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    function waitForInternet() {
+      if (navigator.onLine !== false) return Promise.resolve();
+      say(t("waitNet"), true);
+      return new Promise((r) => window.addEventListener("online", r, { once: true }));
+    }
+
+    function addBubble(role, text) {
+      const el = document.createElement("div");
+      el.className = "bubble " + role;
+      el.textContent = text; // textContent, never innerHTML: nothing she or the AI writes can run as code
+      log.appendChild(el);
+      scrollDown();
+      return el;
+    }
+
+
+    // A small "Listen" button that reads some text aloud. getText runs at tap time, so it reads
+    // whatever is on screen then (for example, the translated version).
+    function listenButton(getText) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "listen-btn";
+      b.setAttribute("aria-pressed", "false");
+      b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><span></span>`;
+      b.querySelector("span").textContent = t("listen");
+      b.addEventListener("click", (e) => { e.stopPropagation(); voice.readAloud(getText(), b); });
+      return b;
+    }
+
+    function addTyping() {
+      const el = document.createElement("div");
+      el.className = "bubble assistant typing";
+      el.setAttribute("role", "status");
+      el.setAttribute("aria-label", "Thinking");
+      el.innerHTML = "<i></i><i></i><i></i>";
+      log.appendChild(el);
+      scrollDown();
+      return el;
+    }
+
+    function addError(message) {
+      addBubble("error", message); // only for problems retrying can't fix (setup, very long message)
+    }
+
+    function setBusy(on) {
+      busy = on;
+      sendBtn.disabled = on;
+      document.body.classList.toggle("thinking", on); // the background ripples while she waits
+    }
+
+    // One try at getting an answer. Returns the reply text, or throws:
+    //   {fatal: message}  -> something retrying can't fix (shown once)
+    //   anything else     -> temporary problem, requestReply quietly tries again
+    async function fetchReplyOnce(ui) {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.slice(-MAX_SEND).map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
+          lang: LANG,
+          ...(window.companion ? window.companion.forAI() : {}),
+        }),
+      });
+      const type = res.headers.get("Content-Type") || "";
+      if (!type.includes("ndjson") || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.reply) {
+          if (data.crisis) ui.crisis();
+          ui.show(data.reply);
+          return data.reply;
+        }
+        if (data.fatal || res.status === 400 || res.status === 413) throw { fatal: data.error || "Something isn't working." };
+        throw new Error("temporary " + res.status);
+      }
+      // Streaming answer: show the words as they arrive.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "", reply = "", done = false;
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        buf += decoder.decode(chunk.value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) !== -1) {
+          const line = buf.slice(0, nl);
+          buf = buf.slice(nl + 1);
+          if (!line.trim()) continue;
+          let msg;
+          try { msg = JSON.parse(line); } catch { continue; }
+          if (msg.crisis) ui.crisis();
+          if (msg.reset) { reply = ""; ui.reset(); }
+          if (typeof msg.text === "string" && msg.text) { reply = msg.text; ui.show(reply); }
+          if (msg.done) done = true;
+          if (msg.fatal) throw { fatal: msg.error };
+        }
+      }
+      if (!done || !reply) throw new Error("incomplete"); // connection dropped mid-answer
+      return reply;
+    }
+
+    async function requestReply(opts = {}) {
+      crisisOpened = false;
+      setBusy(true);
+      let typing = addTyping();
+      let bubble = null;
+      const speak = !!opts.speak && (voice.canSpeak || (typeof clone !== "undefined" && !!clone.active)); // read aloud only if she asked by voice
+      if (speak) voice.beginReply();
+      const ui = {
+        show(text) {
+          if (!bubble) { typing.remove(); bubble = addBubble("assistant", ""); }
+          bubble.textContent = text;
+          quiet();
+          scrollDown();
+          if (speak) voice.feed(text, false);
+        },
+        reset() {
+          if (bubble) { bubble.remove(); bubble = null; }
+          if (!typing.isConnected) typing = addTyping();
+          if (speak) voice.resetReply();
+        },
+        crisis() {
+          if (!document.body.classList.contains("crisis-on") || !crisisOpened) { crisisOpened = true; setTimeout(() => emergency.open(), 0); }
+          document.body.classList.add("crisis-on");
+          try { sessionStorage.setItem("crisis", "1"); } catch {}
+        },
+      };
+      // A gentle note if she's been waiting a while. Never a "try again".
+      const slowNote = setTimeout(() => { if (!bubble) say(t("slow"), true); }, 10000);
+
+      try {
+        for (let attempt = 0; ; attempt++) {
+          await waitForInternet();
+          try {
+            const reply = await fetchReplyOnce(ui);
+            if (speak) voice.feed(reply, true);
+            if (bubble) bubble.appendChild(listenButton(() => reply));
+            const asked = [...history].reverse().find((m) => m.role === "user");
+            history.push({ role: "assistant", content: reply });
+            save();
+            emergency.offer(asked ? asked.content : "");
+            if (!document.body.classList.contains("crisis-on")) village.offer(asked ? asked.content : "");
+            if (!offerMyth(asked ? asked.content : "")) {
+              offerGuide(asked ? asked.content : "", reply);
+              offerArticle(asked ? asked.content : "", reply);
+            }
+            return;
+          } catch (err) {
+            if (err && err.fatal) {
+              ui.reset(); typing.remove();
+              addError(err.fatal);
+              return;
+            }
+            // Temporary problem: wipe any half answer, keep the dots, and quietly try again.
+            ui.reset();
+            if (attempt >= 1) say(t("stillWorking"), true);
+            await wait(Math.min(2000 * 2 ** attempt, 15000));
+          }
+        }
+      } finally {
+        clearTimeout(slowNote);
+        typing.remove();
+        quiet();
+        setBusy(false);
+      }
+    }
+
+    async function submitText(fromVoice = false) {
+      const text = input.value.trim();
+      if (!text || busy) return;
+      if (!fromVoice) voice.stopSpeaking(); // she's typing now, so stay quiet
+      input.value = "";
+      autosize();
+      history.push({ role: "user", content: text });
+      save();
+      refreshMode();
+      addBubble("user", text);
+      // "She fed 20 minutes on the left": log it (Nemotron tool calling) instead of chatting.
+      if (window.companion) {
+        setBusy(true);
+        const typing = addTyping();
+        let logged = null;
+        try { logged = await window.companion.maybeLogFromChat(text); } catch {}
+        typing.remove();
+        setBusy(false);
+        if (logged) {
+          history.push({ role: "assistant", content: logged });
+          save();
+          const el = addBubble("assistant", logged);
+          el.appendChild(listenButton(() => logged));
+          if (fromVoice) voice.readAloud(logged);
+          return;
+        }
+      }
+      requestReply({ speak: fromVoice });
+    }
+
+    function autosize() {
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 140) + "px";
+    }
+
+    form.addEventListener("submit", (e) => { e.preventDefault(); submitText(false); });
+    input.addEventListener("input", autosize);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submitText(false); }
+    });
+
+    // ---- One shared audio player for all spoken audio (cloud voice, loved one's voice) ----
+    // Phones, iPhones especially, only let a page play sound it started from a tap. We "unlock" this one
+    // player on her first tap anywhere, then reuse it for every answer, so sound always works later.
+    const player = (() => {
+      const el = new Audio();
+      el.preload = "auto";
+      const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+      let unlocked = false;
+      const unlock = () => {
+        if (unlocked) return;
+        unlocked = true;
+        try { el.src = SILENT; el.play().catch(() => { unlocked = false; }); } catch { unlocked = false; }
+      };
+      ["pointerdown", "keydown", "touchend"].forEach((ev) => window.addEventListener(ev, unlock, { capture: true, passive: true }));
+      let current = null;
+      function play(url) {
+        return new Promise((resolve) => {
+          if (current) current();
+          let done = false;
+          const finish = () => { if (done) return; done = true; el.onended = el.onerror = null; current = null; resolve(); };
+          current = finish;
+          el.onended = finish;
+          el.onerror = finish;
+          el.src = url;
+          el.play().catch(finish);
+        });
+      }
+      function stop() { try { el.pause(); } catch {} if (current) current(); }
+      return { play, stop };
+    })();
+
+    // ---- Natural cloud voice: fast, human-sounding speech in every language, from the server ----
+    const cloud = (() => {
+      let enabled = false, backup = false, voices = {};
+      fetch("/api/config").then((r) => r.json()).then((c) => { enabled = !!c.cloudVoice; backup = !!c.backupVoice; voices = c.voices || {}; }).catch(() => {});
+      let queue = [], working = false, stopped = false, failed = false;
+      const LANG_OF = (text) => {
+        if (/[\u0600-\u06FF]/.test(text)) return /[ٹڈڑںےۓہھگچپژ]/.test(text) ? "ur" : "ar";
+        if (/[ğşıİĞŞ]/.test(text)) return "tr";
+        if (/[ñ¿¡]/.test(text)) return "es";
+        return LANG;
+      };
+      function prefsFor(lang) {
+        const p = voice.myPrefs();
+        return lang === LANG ? p : {};
+      }
+      async function fetchAudio(text) {
+        const lang = LANG_OF(text);
+        const p = prefsFor(lang);
+        const res = enabled
+          ? await fetch("/api/tts", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, lang, voice: p.cloudVoice || "", rate: p.rate || 1, pitch: p.pitch || 1 }),
+            })
+          : await fetch("/api/backup-voice", { // no Azure: the backup voice, only for languages the device can't speak
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text, lang }),
+            });
+        if (!res.ok) throw new Error("tts " + res.status);
+        return URL.createObjectURL(await res.blob());
+      }
+      const deviceHas = (code) => {
+        if (!window.speechSynthesis) return false;
+        const want = code.toLowerCase();
+        return speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().replace("_", "-").startsWith(want));
+      };
+      const take = () => {
+        let text = queue.shift();
+        while (queue.length && (text + " " + queue[0]).length < 320) text += " " + queue.shift(); // fewer, fuller requests
+        return text;
+      };
+      // Play queued text in order; while one piece plays, the next one is already being made.
+      async function work(onDone) {
+        if (working) return;
+        working = true;
+        let next = null;
+        while (!stopped && (queue.length || next)) {
+          const cur = next || { text: take(), url: null };
+          next = null;
+          cur.url = cur.url || fetchAudio(cur.text);
+          let url;
+          try { url = await cur.url; } catch {
+            failed = true; // the cloud voice isn't working right now: hand the rest to the phone's own voice
+            const rest = [cur.text, ...queue];
+            queue = [];
+            working = false;
+            onDone && onDone(rest);
+            return;
+          }
+          if (stopped) { URL.revokeObjectURL(url); break; }
+          if (queue.length) { const nt = take(); next = { text: nt, url: fetchAudio(nt) }; next.url.catch(() => {}); }
+          await player.play(url);
+          URL.revokeObjectURL(url);
+        }
+        working = false;
+        onDone && onDone([]);
+      }
+      return {
+        get enabled() { return enabled && !failed; },
+        // the backup voice is used only when the device has no voice for this text's language
+        needsBackup(text) { const l = LANG_OF(text); return !enabled && backup && !failed && l !== "en" && l !== "ur" && !deviceHas(l); },
+        voicesFor: (lang) => voices[lang] || [],
+        enqueue(text, onDone) { if (!text) return; stopped = false; queue.push(text); work(onDone); },
+        stop() { stopped = true; queue = []; player.stop(); working = false; },
+        reset() { this.stop(); stopped = false; failed = false; },
+        isSpeaking: () => working,
+      };
+    })();
+
+    // ---- Voice: she taps "Talk to me", speaks, and hears the answer read aloud ----
+    // Uses the speech recognition and voices built into the browser (Chrome, Edge, Safari):
+    // free, no extra keys. Nemotron on Nebius still writes every answer.
+    const voice = (() => {
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const synth = window.speechSynthesis;
+      const canSpeak = !!(synth && window.SpeechSynthesisUtterance);
+      // Speech language follows the app language (English keeps her own accent setting, like en-GB).
+      const speechLang = () => {
+        const l = LANGS.find((x) => x.id === LANG);
+        const nav = navigator.language || "en-US";
+        return LANG === "en" ? (nav.startsWith("en") ? nav : "en-US") : (nav.startsWith(LANG) ? nav : l.speech);
+      };
+      let rec = null, listening = false, heard = "", lang = speechLang();
+      const voicesChanged = [];
+      let spokenUpTo = 0, pending = 0, chosen = null;
+
+      const LABEL = { idle: "talk", listening: "listening", speaking: "tapStop" };
+      let state = "idle";
+      function setState(s) {
+        document.body.classList.toggle("listening", s === "listening");
+        document.body.classList.toggle("speaking", s === "speaking");
+        talkBtn.textContent = t(LABEL[s]);
+        state = s;
+        talkBtn.setAttribute("aria-pressed", s === "idle" ? "false" : "true");
+      }
+
+      // Pick a warm, natural voice in her language if the device has one.
+      // Pick the most human-sounding voice in her language. Newer "neural" voices (Edge's
+      // "Online (Natural)", Apple's "Enhanced" and "Premium", Google's network voices) sound like a
+      // real person; the old desktop voices (Microsoft David, Zira, Mark, eSpeak) sound robotic.
+      const speechLangNow = () => lang;
+      let warnedNoVoice = false;
+      // Which language is this text in? Read from its letters, so an Urdu answer is read by an Urdu voice
+      // even if the app is set to English. null = same as the app.
+      function textLang(text) {
+        if (/[\u0600-\u06FF]/.test(text)) return /[ٹڈڑںےۓہھگچپژ]/.test(text) ? "ur" : "ar"; // these letters are Urdu, not Arabic
+        if (/[ğşıİĞŞ]/.test(text)) return "tr";
+        if (/[ñ¿¡]/.test(text)) return "es";
+        return null;
+      }
+      const speechTag = (code) => {
+        const l = LANGS.find((x) => x.id === code);
+        const nav = navigator.language || "";
+        return nav.toLowerCase().startsWith(code) ? nav : (l ? l.speech : code);
+      };
+      const voicesFor = (tag) => canSpeak ? synth.getVoices().filter((v) => v.lang.toLowerCase().replace("_", "-").startsWith(tag.slice(0, 2).toLowerCase())) : [];
+
+      // Her own choice, saved per language: { name, rate, pitch }. Empty = automatic.
+      function loadPrefs() { try { return JSON.parse(localStorage.getItem("mh-voice") || "{}"); } catch { return {}; } }
+      let prefs = loadPrefs();
+      const myPrefs = () => prefs[LANG] || {};
+      function setPrefs(p) {
+        prefs[LANG] = p;
+        try { localStorage.setItem("mh-voice", JSON.stringify(prefs)); } catch {}
+        chosen = pickVoice();
+      }
+      const isNatural = (v) => /natural|neural|online|premium|enhanced|siri|google/i.test(v.name);
+      function voicesForLang() {
+        if (!canSpeak) return [];
+        const base = lang.split("-")[0].toLowerCase();
+        return synth.getVoices().filter((v) => v.lang.toLowerCase().replace("_", "-").startsWith(base));
+      }
+
+      function pickVoice(forLang) {
+        if (!canSpeak) return null;
+        const voices = synth.getVoices();
+        if (!voices.length) return null;
+        const lang = forLang || speechLangNow(); // eslint-disable-line no-shadow
+        const wanted = !forLang && myPrefs().name && voices.find((v) => v.name === myPrefs().name);
+        if (wanted) return wanted;
+        const base = lang.split("-")[0].toLowerCase();
+        const score = (v) => {
+          const name = v.name, vl = v.lang.toLowerCase().replace("_", "-");
+          if (!vl.startsWith(base)) return -1000;                    // wrong language: never
+          let n = 0;
+          if (vl === lang.toLowerCase()) n += 3;                      // her exact region
+          if (/natural|neural/i.test(name)) n += 40;                  // Edge and Windows 11 neural voices
+          else if (/online/i.test(name)) n += 30;
+          if (/premium|enhanced|siri/i.test(name)) n += 32;           // Apple's high quality voices
+          if (/google/i.test(name)) n += 18;                          // Chrome's network voices
+          if (/\b(david|zira|mark|hazel|george|susan|james|heera|ravi|espeak|festival|pico)\b/i.test(name) && !/natural|online/i.test(name)) n -= 25;
+          // warm female voices, which most mothers in testing prefer for this kind of app
+          if (/aria|jenny|ava|emma|michelle|sonia|libby|natasha|samantha|karen|moira|zariyah|salma|hala|uzma|emel|elvira|dalia|paloma|ximena|monica|female/i.test(name)) n += 6;
+          return n;
+        };
+        const best = voices.slice().sort((a, b) => score(b) - score(a))[0];
+        return best && score(best) > -1000 ? best : null;
+      }
+      if (canSpeak) {
+        chosen = pickVoice();
+        synth.addEventListener?.("voiceschanged", () => { chosen = pickVoice(); voicesChanged.forEach((fn) => fn()); });
+      }
+
+      function speakChunk(text, override) {
+        if (!canSpeak) return;
+        const u = new SpeechSynthesisUtterance(text);
+        const tl = textLang(text);
+        let v = (override && override.voice) || chosen;
+        if (!override && tl && tl !== LANG) v = pickVoice(speechTag(tl)) || null; // text is in another language
+        if (v) { u.voice = v; u.lang = v.lang; } else u.lang = tl && tl !== LANG ? speechTag(tl) : lang;
+        // Neural voices sound most natural at their own pace and pitch; older voices get a touch slower.
+        const neural = v && isNatural(v);
+        const mine = tl && tl !== LANG ? {} : myPrefs();
+        u.rate = (override && override.rate) || mine.rate || (neural ? 1 : 0.95);
+        u.pitch = (override && override.pitch) || mine.pitch || 1;
+        pending++;
+        setState("speaking");
+        const done = () => {
+          pending = Math.max(0, pending - 1);
+          if (!pending && held) { const h = held; held = ""; splitLong(h).forEach((x) => speakChunk(x)); return; } // next batch, straight away
+          if (!pending) { if (!listening) setState("idle"); releaseReader(); }
+        };
+        u.onend = done;
+        u.onerror = (e) => {
+          if (e && /language|voice|synthesis/i.test(e.error || "") && !warnedNoVoice) { warnedNoVoice = true; say(t("noSpeakLang")); }
+          done();
+        };
+        synth.speak(u);
+      }
+
+      function stopSpeaking() {
+        if (typeof clone !== "undefined") clone.stop();
+        cloud.stop();
+        after = []; held = "";
+        if (!canSpeak) { releaseReader(); return; }
+        pending = 0;
+        spokenUpTo = Infinity; // ignore the rest of the reply that's still arriving
+        synth.cancel();
+        if (!listening) setState("idle");
+        releaseReader();
+      }
+
+      // Read aloud: any answer, article, myth card or guide step, at the tap of "Listen".
+      let readerBtn = null;
+      function releaseReader() {
+        if (!readerBtn) return;
+        readerBtn.setAttribute("aria-pressed", "false");
+        readerBtn.querySelector("span").textContent = t("listen");
+        readerBtn = null;
+      }
+      function readAloud(text, btn) {
+        if (btn && readerBtn === btn) { stopSpeaking(); return; } // second tap stops
+        const lovedOne = typeof clone !== "undefined" && clone.active;
+        if (!lovedOne && !cloud.enabled && !canSpeak) { say(t("noVoice")); return; }
+        // (No early "no voice" check: some phones can speak a language even when they don't list a voice for it.)
+        stopSpeaking();
+        if (lovedOne) { clone.newAnswer(); clone.checkWhole(String(text)); }
+        cloud.reset();
+        const isUrdu = /[\u0600-\u06FF]/.test(String(text)) && (LANG === "ur" || /[ٹڈڑںےۓہھگچپژ]/.test(String(text)));
+        if (isUrdu && !voicesFor("ur").length && !cloud.enabled) { say(t("noUrduVoice")); return; }
+        spokenUpTo = 0;
+        readerBtn = btn || null;
+        if (btn) { btn.setAttribute("aria-pressed", "true"); btn.querySelector("span").textContent = t("stopListen"); }
+        const parts = String(text).match(/[^.!?۔؟\n]+[.!?۔؟]*/g) || [String(text)];
+        const clean = parts.map((x) => x.trim()).filter(Boolean);
+        // first sentence on its own so it starts fast, the rest in fuller pieces
+        if (clean.length) route(clean[0]);
+        splitLong(clean.slice(1).join(" ")).forEach(route);
+      }
+
+      // Called as the reply streams in. Speak each finished sentence right away so she isn't
+      // waiting for the whole answer; speak whatever is left once the reply is complete.
+      // Fewer, fuller pieces of speech mean fewer pauses: online voices fetch each piece before speaking it.
+      // The first sentence starts at once; sentences that arrive while it plays are gathered and spoken together.
+      let held = "";
+      function splitLong(text, max = 240) {
+        const out = [];
+        let cur = "";
+        for (const part of text.match(/[^.!?۔؟]+[.!?۔؟]*\s*/g) || [text]) {
+          if (cur && (cur + part).length > max) { out.push(cur.trim()); cur = ""; }
+          cur += part;
+        }
+        if (cur.trim()) out.push(cur.trim());
+        return out;
+      }
+      function queueSpeech(chunk) {
+        if (!canSpeak) return;
+        if (pending === 0 && !synth.speaking) speakChunk(chunk);
+        else held = held ? held + " " + chunk : chunk;
+      }
+
+      // Send a sentence to the loved one's voice when it's on, otherwise to the usual voice.
+      // Anything urgent (and anything after it) waits and is read in the usual voice, in order.
+      let after = [];
+      function route(chunk) {
+        if (typeof village !== "undefined") village.stopAudio();
+        if (typeof clone !== "undefined" && clone.active && clone.usable(chunk)) {
+          setState("speaking");
+          clone.enqueue(chunk, (rest) => {
+            [...rest, ...after].forEach((c) => speakChunk(c));
+            after = [];
+            if (!pending && !listening) { setState("idle"); releaseReader(); }
+          });
+        } else if (typeof clone !== "undefined" && clone.isSpeaking()) {
+          after.push(chunk);
+        } else if (cloud.enabled || cloud.needsBackup(chunk) || cloud.isSpeaking()) {
+          setState("speaking");
+          cloud.enqueue(chunk, (rest) => {
+            rest.forEach((c) => queueSpeech(c)); // if the cloud voice failed, the phone's voice finishes the answer
+            if (!rest.length && !pending && !listening) { setState("idle"); releaseReader(); }
+          });
+        } else queueSpeech(chunk);
+      }
+
+      function feed(text, final) {
+        if (!canSpeak || spokenUpTo === Infinity) return;
+        let upTo = spokenUpTo;
+        if (final) upTo = text.length;
+        else {
+          const re = /[.!?](?=\s|$)/g;
+          re.lastIndex = spokenUpTo;
+          let m;
+          while ((m = re.exec(text))) upTo = m.index + 1;
+        }
+        const chunk = text.slice(spokenUpTo, upTo).trim();
+        spokenUpTo = upTo;
+        if (chunk) route(chunk);
+      }
+      function beginReply() { if (typeof clone !== "undefined") clone.newAnswer(); cloud.reset(); after = []; held = ""; if (canSpeak) { synth.cancel(); pending = 0; spokenUpTo = 0; } }
+      function resetReply() { if (typeof clone !== "undefined") clone.newAnswer(); cloud.reset(); after = []; held = ""; if (canSpeak) { synth.cancel(); pending = 0; spokenUpTo = 0; setState("idle"); } }
+
+      // Mothers pause to think, or remember something halfway through. So listening only ends
+      // after a real silence, and if the browser stops on its own, we quietly start again and keep
+      // everything she has said. She can always tap the button to send right away.
+      const SILENCE_MS = 4000;      // quiet this long after speaking = she's done
+      const NOTHING_HEARD_MS = 10000; // nothing said at all for this long = stop
+      let wantListening = false, committed = "", silenceTimer = 0, restarts = 0;
+
+      function armSilence() {
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(finishListening, heard ? SILENCE_MS : NOTHING_HEARD_MS);
+      }
+
+      function sessionText(results) {
+        // Join this session's pieces. Some phones repeat earlier words inside later pieces,
+        // so if a piece already contains the previous one, keep only the longer piece.
+        const parts = [];
+        for (let i = 0; i < results.length; i++) {
+          const seg = results[i][0].transcript.trim();
+          if (!seg) continue;
+          const prev = parts[parts.length - 1];
+          if (prev && seg.toLowerCase().startsWith(prev.toLowerCase())) parts[parts.length - 1] = seg;
+          else parts.push(seg);
+        }
+        return parts.join(" ");
+      }
+
+      function openRecognizer() {
+        rec = new Recognition();
+        rec.lang = lang;
+        rec.interimResults = true; // show her words as she speaks
+        rec.continuous = true;     // don't stop at the first short pause
+        rec.maxAlternatives = 1;
+
+        rec.onresult = (e) => {
+          heard = (committed + " " + sessionText(e.results)).trim();
+          input.value = heard;
+          autosize();
+          armSilence();
+        };
+        rec.onerror = (e) => {
+          if (e.error === "language-not-supported" && lang !== "en-US") {
+            lang = "en-US"; // fall back; onend will reopen with English
+            return;
+          }
+          if (e.error === "no-speech" || e.error === "aborted") return; // onend decides what's next
+          wantListening = false;
+          const msg = {
+            "not-allowed": t("micBlocked"), "service-not-allowed": t("micBlocked"),
+            "audio-capture": t("noMic"), network: t("needNet"),
+          }[e.error];
+          if (msg) say(msg);
+        };
+        rec.onend = () => {
+          if (wantListening && restarts < 30) {
+            // The browser stopped on its own (a long pause, or its time limit). Keep going.
+            committed = heard;
+            restarts++;
+            setTimeout(() => {
+              if (!wantListening) return endListening();
+              try { openRecognizer(); rec.start(); } catch { endListening(); }
+            }, 120);
+            return;
+          }
+          endListening();
+        };
+      }
+
+      function startListening() {
+        if (!Recognition) {
+          say(t("noVoice"));
+          input.focus();
+          return;
+        }
+        stopSpeaking();
+        heard = "";
+        committed = "";
+        restarts = 0;
+        wantListening = true;
+        try {
+          openRecognizer();
+          rec.start();
+          listening = true;
+          setState("listening");
+          say(t("takeTime"), true);
+          armSilence();
+        } catch {
+          wantListening = false;
+          listening = false;
+          setState("idle");
+        }
+      }
+
+      function finishListening() {
+        clearTimeout(silenceTimer);
+        wantListening = false;
+        if (rec) { try { rec.stop(); } catch { endListening(); } } else endListening();
+      }
+
+      function endListening() {
+        if (!listening) return;
+        clearTimeout(silenceTimer);
+        wantListening = false;
+        listening = false;
+        say("", true);
+        if (!pending) setState("idle");
+        if (heard) submitText(true); // she's finished: send it
+        else say(t("noHear"));
+      }
+
+      talkBtn.addEventListener("click", () => {
+        if (listening) return finishListening(); // tap = "I'm done", send now
+        if (document.body.classList.contains("speaking")) return stopSpeaking();
+        if (busy) { say(t("oneMoment")); return; }
+        startListening();
+      });
+
+      // Can this device read aloud in her language?
+      const hasVoiceFor = () => !canSpeak || synth.getVoices().some((v) => v.lang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase()));
+      onLang(() => {
+        lang = speechLang();
+        chosen = pickVoice();
+        talkBtn.textContent = t(LABEL[state]);
+      });
+      return {
+        get canSpeak() { return canSpeak || cloud.enabled; },
+        feed, beginReply, resetReply, stopSpeaking, hasVoiceFor, readAloud,
+        // true while the app is listening, reading, or has sentences waiting to be read
+        isBusy: () => listening || pending > 0 || after.length > 0 || held.length > 0 || (canSpeak && (synth.speaking || synth.pending)) ||
+          (typeof clone !== "undefined" && clone.isSpeaking()) || cloud.isSpeaking(),
+        voicesForLang, isNatural, myPrefs, setPrefs, onVoices: (fn) => voicesChanged.push(fn),
+        get current() { return chosen; },
+        preview(text, override) {
+          if (!canSpeak) return;
+          stopSpeaking();
+          spokenUpTo = 0;
+          speakChunk(text, override);
+        },
+      };
+    })();
+
+    // ---- Dotted guides: short step-by-step animations in the same dotted style as the sky ----
+    // Each step is drawn with simple shapes on a hidden canvas, then shown as dots: dark for the
+    // baby, lighter for you (your chest, arm, lap), pink for the thing to notice. Small labels
+    // point at the important parts so the picture explains itself.
+    const guides = (() => {
+      const TAU = Math.PI * 2;
+      const ease = (x) => (x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const seg = (p, a, b) => ease((p - a) / (b - a)); // 0..1 between two moments of the loop
+
+      // Colors: "m" baby, "l" you or objects, "c" baby's clothes, "ar" areola, "a" the thing to
+      // notice, "d" small details (eyes, ears), "in" inside the mouth, "x" background (a gap).
+      let PAL = {};
+      function paint(g, kind) {
+        g.fillStyle = g.strokeStyle = PAL[kind] || PAL.m;
+      }
+      function circle(g, x, y, r, kind = "m") { paint(g, kind); g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
+      function ellipse(g, x, y, rx, ry, rot = 0, kind = "m") { paint(g, kind); g.beginPath(); g.ellipse(x, y, rx, ry, rot, 0, TAU); g.fill(); }
+      function rrect(g, x, y, w, h, r, kind = "m") { paint(g, kind); g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); }
+      function poly(g, pts, kind = "m") { paint(g, kind); g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); }
+      function line(g, x1, y1, x2, y2, w, kind = "m") { paint(g, kind); g.lineWidth = w; g.lineCap = "round"; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
+      function arc(g, x, y, r, a0, a1, w, kind = "m") { paint(g, kind); g.lineWidth = w; g.lineCap = "round"; g.beginPath(); g.arc(x, y, r, a0, a1); g.stroke(); }
+      function arrow(g, x1, y1, x2, y2, kind = "a") {
+        line(g, x1, y1, x2, y2, 5, kind);
+        const a = Math.atan2(y2 - y1, x2 - x1);
+        poly(g, [[x2 + Math.cos(a) * 6, y2 + Math.sin(a) * 6], [x2 + Math.cos(a + 2.5) * 13, y2 + Math.sin(a + 2.5) * 13], [x2 + Math.cos(a - 2.5) * 13, y2 + Math.sin(a - 2.5) * 13]], kind);
+      }
+
+      // Baby seen from the side, facing right, lying on its side. tilt < 0 tips the head back.
+      // mouth: 0 closed .. 1 wide open. Returns where the nose and chin ended up, for labels.
+      function babySide(g, x, y, { tilt = 0, mouth = 0, mouthKind = "a" } = {}) {
+        g.save(); g.translate(x, y);
+        ellipse(g, -52, 26, 42, 22, -0.08, "c");         // body in a onesie
+        ellipse(g, -22, 34, 12, 9, 0.3);                 // little arm
+        circle(g, -98, 30, 12, "c");                     // feet end
+        g.save(); g.rotate(tilt);
+        circle(g, 0, 0, 33, "x");                        // a thin gap so the head reads on its own
+        circle(g, 0, 0, 28);                             // head
+        circle(g, 28, -3, 7);                            // nose
+        arc(g, -7, 3, 6, -1.2, 2.2, 2.5, "d");           // ear
+        arc(g, 11, -11, 5, 0.3, Math.PI - 0.3, 2.5, "d"); // closed eye
+        if (mouth > 0.05) {
+          poly(g, [[14, 13], [46, 13 - 20 * mouth], [46, 13 + 22 * mouth]], "x");
+          poly(g, [[16, 13], [42, 13 - 15 * mouth], [42, 13 + 17 * mouth]], mouthKind);
+        } else line(g, 17, 14, 27, 14, 3, "d");
+        g.restore();
+        const rot = (px, py) => [x + px * Math.cos(tilt) - py * Math.sin(tilt), y + px * Math.sin(tilt) + py * Math.cos(tilt)];
+        g.restore();
+        return { nose: rot(34, -3), chin: rot(18, 26) };
+      }
+
+      // Baby lying on its back, seen from above.
+      function babyTop(g, x, y, s = 1, breathe = 0) {
+        g.save(); g.translate(x, y); g.scale(s, s);
+        ellipse(g, 0, 40, 30 + breathe * 3, 44, 0, "c"); // body in a onesie
+        ellipse(g, -26, 26, 9, 14, 0.4); ellipse(g, 26, 26, 9, 14, -0.4); // arms
+        circle(g, 0, -16, 30, "x");                      // gap
+        circle(g, 0, -16, 25);                           // head
+        arc(g, -8, -19, 4, 0.3, Math.PI - 0.3, 2.5, "d"); arc(g, 8, -19, 4, 0.3, Math.PI - 0.3, 2.5, "d"); // closed eyes
+        arc(g, 0, -8, 5, 0.3, Math.PI - 0.3, 2.5, "d");  // tiny smile
+        g.restore();
+      }
+
+      // You, from the side, facing left: chest with the breast, and your forearm holding baby.
+      function mother(g, nippleY, armY) {
+        rrect(g, 200, -20, 70, 280, 0, "l");                 // your body
+        circle(g, 196, nippleY, 46, "l");                     // breast
+        circle(g, 152, nippleY, 6, "a");                      // nipple
+        if (armY) rrect(g, 0, armY, 214, 16, 8, "l");        // your forearm under baby
+      }
+
+      // ---- close-up latch pictures (side view) ----
+      // Your breast from the side, on the right. Areola centered at (150, 128).
+      function breast(g) {
+        paint(g, "l");
+        g.beginPath();
+        g.moveTo(250, -10);
+        g.bezierCurveTo(200, 0, 158, 70, 146, 128);
+        g.bezierCurveTo(138, 190, 200, 236, 250, 250);
+        g.closePath(); g.fill();
+        ellipse(g, 151, 128, 9, 27, 0, "ar");            // areola (the darker skin)
+        rrect(g, 136, 121, 14, 14, 6, "ar");             // nipple
+      }
+      // Baby's face from the side, facing right. open: 0..1 drops the jaw. latched: mouth full of breast.
+      function babyFace(g, x, y, { tilt = 0, open = 0, latched = false, scale = 1, faceLeft = false, lying = false, bodyRight = false } = {}) {
+        const sx = faceLeft ? -scale : scale;
+        g.save(); g.translate(x, y); g.scale(sx, scale);
+        if (bodyRight) {                                  // cradled: body curls across your tummy, legs hang down
+          ellipse(g, 74, 34, 66, 32, 0.08, "c");
+          circle(g, 136, 62, 13); circle(g, 120, 72, 12); // little feet
+        } else if (faceLeft || lying) {                   // lying across: body straight out behind the head
+          ellipse(g, -84, 26, 64, 30, 0.04, "c");
+          circle(g, -36, 34, 11);                         // little hand
+        } else ellipse(g, -78, 58, 62, 34, -0.12, "c");  // body in a onesie
+        g.rotate(tilt);
+        circle(g, 0, 0, 44);                              // head
+        circle(g, 43, -8, 8);                             // nose
+        const jawY = 24 + 12 * open;
+        ellipse(g, 20, jawY, 24, 18, 0.15);               // lower face and chin, drops as the mouth opens
+        const U = [43, 6], L = [41, 20 + 20 * open];      // top lip, bottom lip
+        if (open > 0.05) {
+          poly(g, [[22, 12], U, L, [24, L[1] - 6]], latched ? "sk" : "in"); // latched: mouth full of breast
+          line(g, 34, 7, 46, 5, 4, "a");                  // top lip
+          circle(g, L[0] + 3, L[1] + 1, 4.5, "a");        // bottom lip, curled out
+        } else line(g, 30, 19, 38, 19, 3, "d");
+        circle(g, 6, 18, 6, "bl");                        // rosy cheek
+        arc(g, 14, -16, 6, 0.3, Math.PI - 0.3, 2.5, "d"); // closed eye
+        arc(g, -12, 2, 9, -1.3, 2.3, 2.5, "d");          // ear
+        g.restore();
+        const at = ([px, py]) => {
+          const rx = px * Math.cos(tilt) - py * Math.sin(tilt), ry = px * Math.sin(tilt) + py * Math.cos(tilt);
+          return [x + sx * rx, y + scale * ry];
+        };
+        return { nose: at([51, -8]), top: at(U), bottom: at(L), chin: at([28, jawY + 18]) };
+      }
+
+      // You, seated, seen from the front, with one breast uncovered for feeding.
+      // armUnder: draw your arm cradling under the baby.
+      const NIP = [150, 124];
+      function motherFront(g) {
+        circle(g, 120, 36, 30, "hr");                     // hair
+        circle(g, 120, 44, 24, "sk");                     // face
+        arc(g, 111, 43, 4, 0.3, Math.PI - 0.3, 2.2, "d"); arc(g, 129, 43, 4, 0.3, Math.PI - 0.3, 2.2, "d"); // calm closed eyes
+        arc(g, 120, 51, 6, 0.4, Math.PI - 0.4, 2.2, "d"); // soft smile
+        rrect(g, 111, 64, 18, 16, 6, "sk");               // neck
+        rrect(g, 52, 76, 136, 190, 48, "top");            // your top
+        circle(g, 152, 122, 25, "sk");                    // uncovered breast
+        circle(g, NIP[0], NIP[1], 9, "ar");               // areola
+        circle(g, NIP[0], NIP[1], 3.6, "nip");            // nipple
+      }
+      function cradleArm(g) {
+        paint(g, "sk"); g.lineWidth = 22; g.lineCap = "round"; g.lineJoin = "round";
+        g.beginPath(); g.moveTo(68, 96); g.lineTo(58, 168); g.lineTo(132, 184); g.stroke(); // your arm holding baby
+      }
+
+      // You, seen from the side, facing right and looking down at baby. Breast front at about (134,130).
+      const NIP2 = [134, 130];
+      function motherSide(g) {
+        paint(g, "top");                                  // your top, from the side
+        g.beginPath(); g.moveTo(14, 250); g.lineTo(16, 104);
+        g.quadraticCurveTo(22, 80, 50, 78); g.lineTo(92, 84);
+        g.quadraticCurveTo(102, 92, 100, 112); g.lineTo(104, 250); g.closePath(); g.fill();
+        rrect(g, 56, 56, 20, 30, 8, "sk");                // neck
+        circle(g, 62, 36, 28, "hr");                      // hair
+        circle(g, 74, 42, 24, "sk");                      // face, tilted down toward baby
+        circle(g, 96, 46, 6, "sk");                       // nose
+        arc(g, 84, 42, 5, 0.4, Math.PI - 0.2, 2.2, "d");  // eyes looking down
+        arc(g, 88, 56, 5, 0.2, Math.PI - 0.6, 2.2, "d");  // soft smile
+        circle(g, 52, 18, 12, "hr");                      // hair bun
+        ellipse(g, 110, 130, 26, 24, 0, "sk");            // uncovered breast
+        ellipse(g, 130, 130, 5, 10, 0, "ar");             // areola
+        circle(g, NIP2[0], NIP2[1], 3.5, "nip");          // nipple
+      }
+      function forearm(g) {
+        paint(g, "sk"); g.lineWidth = 20; g.lineCap = "round"; g.lineJoin = "round";
+        g.beginPath(); g.moveTo(48, 100); g.lineTo(70, 176); g.lineTo(232, 180); g.stroke(); // upper arm, then forearm under baby
+      }
+
+      // Cradle hold, like the classic drawing: you look down at baby, baby's head rests in the crook of
+      // your arm on the breast side, baby's body curls across your tummy, your other arm wraps the front.
+      const NIP3 = [94, 120];
+      function motherCradle(g) {
+        circle(g, 128, 36, 28, "hr");                     // hair, head turned toward baby
+        circle(g, 150, 30, 11, "hr");                     // hair tied back
+        circle(g, 114, 46, 22, "sk");                     // face, tilted down toward baby
+        circle(g, 94, 52, 6, "sk");                       // nose
+        arc(g, 104, 46, 4.5, 0.5, Math.PI - 0.1, 2.2, "d"); // eye looking down at baby
+        arc(g, 102, 58, 5, 0.2, Math.PI - 0.8, 2.2, "d");   // soft smile
+        rrect(g, 112, 62, 18, 18, 6, "sk");               // neck
+        rrect(g, 52, 74, 140, 190, 48, "top");            // your top
+        circle(g, 98, 116, 21, "sk");                     // breast on the side baby is feeding from
+        circle(g, NIP3[0], NIP3[1], 7.5, "ar");           // areola
+        circle(g, NIP3[0], NIP3[1], 3.2, "nip");          // nipple
+      }
+      function armPath(g, pts) {
+        paint(g, "sk"); g.lineCap = "round"; g.lineJoin = "round"; g.lineWidth = 19;
+        g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+      }
+      // Baby in the cradle hold. Returns face points for labels.
+      function cradleBaby(g, x, y, opts) {
+        armPath(g, [[64, 92], [40, 156], [62, 178], [158, 184]]);   // the arm baby lies on: head in the crook
+        const f = babyFace(g, x, y, { scale: 0.55, bodyRight: true, ...opts });
+        armPath(g, [[180, 94], [198, 150], [176, 168], [146, 170]]); // your other arm wraps the front
+        return f;
+      }
+
+      // ---- big close-up latch pictures: baby's head on the left facing right, breast on the right ----
+      // Breast comes in from the right with the nipple pointing at baby. Nipple tip at about (150,104).
+      // dy moves the breast down: 0 = nipple level with baby's nose, 25 = areola level with baby's mouth.
+      function closeBreast(g, dy = 0) {
+        circle(g, 252, 104 + dy, 92, "sk");               // your breast
+        ellipse(g, 164, 104 + dy, 11, 22, 0, "ar");       // areola (the darker skin)
+        ellipse(g, 153, 104 + dy, 9, 9, 0, "nip");        // nipple
+      }
+      // Your hand shaping the breast like a C: thumb on top, fingers underneath, away from the dark skin.
+      function cHold(g, k = 1, dy = 0) {
+        const dx = lerp(60, 0, k);
+        g.save(); g.translate(dx, dy);
+        ellipse(g, 214, 32, 34, 13, -0.35, "sk2");        // thumb on top
+        for (let i = 0; i < 3; i++) rrect(g, 176 + i * 22, 168 + i * 4, 20, 46, 10, "sk2"); // fingers underneath
+        rrect(g, 196, 196, 80, 60, 26, "sk2");            // palm
+        g.restore();
+      }
+      // Baby's head in close-up. open 0..1, latched: lips curled out around the breast.
+      function closeBaby(g, x, { open = 0, latched = false, eyesClosed = false, suck = 0 } = {}) {
+        g.save(); g.translate(x, 0);
+        ellipse(g, 70, 238, 120, 50, 0, "c");             // baby's shoulders in a onesie
+        circle(g, 70, 98, 64);                            // head
+        circle(g, 120, 116, 30);                          // full cheek and face
+        circle(g, 140, latched ? 92 : 102, 9);            // nose (higher when latched, well above the dark skin)
+        const chinY = 146 + 16 * open + suck;
+        ellipse(g, 118, chinY, 24, 18, 0.2);              // chin, drops as the mouth opens
+        if (latched) {                                    // both lips below the nose, sealed around the areola
+          ellipse(g, 150, 116, 7, 4, -0.6, "a");          // top lip curled out
+          ellipse(g, 148, 138, 7, 4, 0.6, "a");           // bottom lip curled out
+        } else if (open > 0.05) {
+          poly(g, [[124, 120], [146, 113], [144, 124 + 26 * open], [126, 128 + 14 * open]], "in");
+          line(g, 132, 114, 147, 112, 4, "a");            // top lip
+          line(g, 128, 126 + 26 * open, 145, 124 + 26 * open, 4, "a"); // bottom lip
+        } else line(g, 130, 124, 142, 123, 3, "d");
+        if (eyesClosed) arc(g, 116, 80, 7, 0.3, Math.PI - 0.3, 2.5, "d");
+        else { circle(g, 118, 80, 4.5, "d"); arc(g, 118, 74, 8, 3.6, 5.4, 2, "d"); } // eye and lid
+        arc(g, 102, 64, 12, 3.7, 5.2, 2.5, "d");          // eyebrow
+        circle(g, 104, 122, 10, "bl");                    // rosy cheek
+        arc(g, 40, 108, 13, -1.4, 2.4, 3, "d");           // ear
+        arc(g, 40, 108, 6, -1.0, 2.0, 2.5, "d");
+        arc(g, 66, 46, 9, 3.6, 5.8, 2.5, "d");            // little curl of hair
+        g.restore();
+      }
+
+      // A cot seen from above: a frame around a soft mattress.
+      function cot(g, x, y, w, h) {
+        rrect(g, x, y, w, h, 16, "l");
+        rrect(g, x + 8, y + 8, w - 16, h - 16, 10, "x");
+        for (let i = 1; i < 6; i++) line(g, x + 8 + (i * (w - 16)) / 6, y + 2, x + 8 + (i * (w - 16)) / 6, y + 7, 2, "l");
+      }
+
+      const LIST = [
+        {
+          id: "latch", title: "How to latch", blurb: "Six steps to a deep, comfortable latch",
+          youtube: "NHS how to latch baby breastfeeding",
+          words: /latch|breastfe|nursing|nipple|sore breast|feed(ing)? (hurts|is painful)/i,
+          steps: [
+            { text: "Sit comfortably. Hold baby across your body, tummy to tummy, head in the crook of your arm, nose level with your nipple.",
+              draw(g, p) {
+                motherCradle(g);
+                const k = seg(p, 0, 0.5);
+                const f = cradleBaby(g, lerp(60, 70, k), lerp(156, 150, k), { tilt: -1.1 });
+                if (p > 0.5) for (let i = 1; i < 4; i++) circle(g, lerp(f.nose[0], NIP3[0], i / 4), lerp(f.nose[1], NIP3[1], i / 4), 1.8, "a");
+                return [["tummy to tummy", 140, 222, "below"]];
+              } },
+            { text: "Up close: nose to nipple. Wait for baby to open wide, like a big yawn.",
+              draw(g, p) {
+                closeBreast(g);
+                closeBaby(g, -8, { open: seg(p, 0.3, 0.7) });
+                if (p < 0.6) for (let d = 0; d < 3; d++) circle(g, 146 - d * 7, lerp(104, 98, d / 2), 2, "a"); // nipple points at the nose
+                return [["nose to nipple", 120, 30, "above"], ["wide open mouth", 100, 214, "below"]];
+              } },
+            { text: "Shape your breast like a C: thumb on top, fingers underneath, away from the darker skin.",
+              draw(g, p) {
+                closeBreast(g);
+                cHold(g, seg(p, 0, 0.5));
+                closeBaby(g, -8, { open: 1 });
+                return [["thumb on top", 196, 14, "above"], ["fingers below", 196, 226, "below"]];
+              } },
+            { text: "Bring baby to you, chin first. The nipple points up toward the roof of baby's mouth.",
+              draw(g, p) {
+                const k = seg(p, 0.05, 0.6);
+                closeBreast(g, 25 * k);
+                cHold(g, 1, 25 * k);
+                closeBaby(g, lerp(-8, 12, k), { open: 1 });
+                if (p < 0.65) arrow(g, 30, 196, 62, 196);
+                return [["chin first", 110, 226, "below"]];
+              } },
+            { text: "Mouth wide on the dark skin, not just the nipple. Lips curled out, chin pressed in, nose resting just above.",
+              draw(g, p) {
+                closeBreast(g, 25);
+                cHold(g, 1, 25);
+                closeBaby(g, 24, { latched: true });
+                return [["nose above the dark skin", 120, 40, "above"], ["mouth on the dark skin", 192, 172, "below"], ["chin pressed in", 100, 226, "below"]];
+              } },
+            { text: "Gently let go of your breast. Slow, deep sucks with little pauses mean a good latch. It should not hurt.",
+              draw(g, p, t) {
+                closeBreast(g, 25);
+                cHold(g, 1 - seg(p, 0, 0.4), 25);
+                closeBaby(g, 24, { latched: true, eyesClosed: true, suck: Math.sin(t * 4) * 1.5 });
+                return [["slow, deep sucks", 110, 226, "below"]];
+              } },
+          ],
+        },
+        {
+          id: "burp", title: "How to burp your baby", blurb: "Three gentle ways to bring up wind",
+          youtube: "NHS how to burp your baby",
+          words: /burp|wind|gas|gassy|spit(ting)? up|colic/i,
+          steps: [
+            { text: "Over your shoulder: hold baby upright with their chin resting on your shoulder.",
+              draw(g, p, t) {
+                circle(g, 170, 52, 30, "l");                       // your head
+                rrect(g, 116, 90, 150, 170, 44, "l");              // your shoulders and chest
+                circle(g, 128, 80, 26, "x");
+                ellipse(g, 100, 146, 28, 46, 0, "x");
+                ellipse(g, 100, 146, 25, 43);                      // baby's body against you
+                circle(g, 124, 82, 22);                            // baby's head on your shoulder
+                line(g, 116, 76, 124, 76, 3, "d");                 // closed eye
+                const pat = Math.abs(Math.sin(t * 5)) * 10;
+                ellipse(g, 62 + pat, 146, 13, 18, 0, "a");         // your hand patting
+                return [["chin on your shoulder", 124, 40, "above"], ["pat gently", 60, 196, "below"]];
+              } },
+            { text: "Sitting on your lap: support their chin and chest with one hand, pat their back with the other.",
+              draw(g, p, t) {
+                rrect(g, 40, 186, 160, 24, 12, "l");               // your lap
+                ellipse(g, 120, 142, 32, 46);                      // baby sitting up
+                circle(g, 124, 80, 26, "x"); circle(g, 124, 80, 22); // head
+                line(g, 128, 76, 136, 76, 3, "d");                 // eye
+                ellipse(g, 160, 118, 12, 18, 0, "a");              // your hand on chest and chin
+                const pat = Math.abs(Math.sin(t * 5)) * 10;
+                ellipse(g, 76 - pat, 136, 12, 17, 0, "a");         // your other hand patting
+                return [["hold chin and chest", 168, 60, "above"], ["pat back", 70, 176, "below"]];
+              } },
+            { text: "Pat or rub gently in small circles. Short breaks during a feed help. If no burp comes, that's okay.",
+              draw(g, p, t) {
+                ellipse(g, 120, 150, 36, 52);                      // baby's back
+                circle(g, 120, 80, 30, "x"); circle(g, 120, 80, 26);
+                const a = t * 2.4;
+                for (let i = 3; i >= 1; i--) circle(g, 120 + Math.cos(a - i * 0.45) * 16, 152 + Math.sin(a - i * 0.45) * 16, 3, "a");
+                ellipse(g, 120 + Math.cos(a) * 16, 152 + Math.sin(a) * 16, 13, 16, 0, "a");
+                return [["small circles", 120, 220, "below"]];
+              } },
+          ],
+        },
+        {
+          id: "swaddle", title: "How to swaddle", blurb: "Snug at the chest, loose at the hips",
+          youtube: "how to swaddle a baby safely NHS",
+          words: /swaddl|wrap(ping)? (the |my )?baby|startle/i,
+          steps: [
+            { text: "Lay a thin blanket flat like a diamond and fold the top corner down.",
+              draw(g, p) {
+                const k = seg(p, 0.15, 0.7);
+                poly(g, [[120, lerp(20, 76, k)], [220, 120], [120, 220], [20, 120]], "l");
+                if (k > 0) poly(g, [[70, 72], [170, 72], [120, lerp(72, 114, k)]], "a");
+                return [["fold the top down", 120, 52, "above"]];
+              } },
+            { text: "Place baby on their back, shoulders just below the fold.",
+              draw(g, p) {
+                poly(g, [[70, 76], [170, 76], [220, 120], [120, 220], [20, 120]], "l");
+                const y = lerp(10, 96, seg(p, 0.05, 0.6));
+                ellipse(g, 120, y + 40, 36, 50, 0, "x"); circle(g, 120, y - 16, 31, "x");
+                babyTop(g, 120, y, 0.95);
+                return [["shoulders at the fold", 120, 236, "below"]];
+              } },
+            { text: "Bring one side across the chest and tuck it under.",
+              draw(g, p) {
+                poly(g, [[70, 76], [170, 76], [220, 120], [120, 220], [20, 120]], "l");
+                ellipse(g, 120, 136, 36, 50, 0, "x"); circle(g, 120, 80, 31, "x");
+                babyTop(g, 120, 96, 0.95);
+                const k = seg(p, 0.1, 0.65);
+                poly(g, [[70, 80], [lerp(20, 158, k), lerp(120, 146, k)], [lerp(96, 150, k), 196]], "a");
+                arrow(g, 40, 200, lerp(40, 92, k) + 1, 200);
+                return [["across the chest", 120, 236, "below"]];
+              } },
+            { text: "Fold the bottom up loosely, then wrap the other side. Snug at the chest, loose at the hips so the legs can bend.",
+              draw(g, p, t) {
+                ellipse(g, 120, 146, 48, 72, 0, "l");              // wrapped blanket
+                circle(g, 120, 66, 30, "x"); circle(g, 120, 66, 25); // baby's face peeking out
+                line(g, 108, 64, 116, 64, 3, "d"); line(g, 124, 64, 132, 64, 3, "d");
+                rrect(g, 74, 110, 92, 12, 6, "a");                 // snug band at the chest
+                const wiggle = Math.sin(t * 3) * 5;
+                ellipse(g, 120, 186, 32 + wiggle, 24, 0, "a");     // room for the hips
+                return [["snug", 186, 112, "right"], ["loose hips", 186, 190, "right"]];
+              } },
+          ],
+        },
+        {
+          id: "sleep", title: "Safe sleep", blurb: "Alone, on their back, in a clear cot",
+          youtube: "Lullaby Trust safer sleep for babies",
+          words: /safe sleep|sids|crib|cot|bassinet|co.?sleep|sleep(s|ing)? on (her|his|their) (tummy|stomach|side)|bed.?shar/i,
+          steps: [
+            { text: "Alone: their own flat sleep space, in your room for the first 6 months.",
+              draw(g, p, t) {
+                cot(g, 56, 20, 128, 200);
+                babyTop(g, 120, 84, 0.9, Math.sin(t * 2) * 0.5 + 0.5);
+                return [["their own cot", 120, 236, "below"]];
+              } },
+            { text: "On their back, for every sleep, day and night.",
+              draw(g, p, t) {
+                rrect(g, 20, 170, 200, 14, 7, "l");                // mattress
+                ellipse(g, 132, 154, 70, 18);                      // baby lying on back, side view
+                circle(g, 54, 146, 26, "x"); circle(g, 54, 146, 22);
+                circle(g, 62, 126, 5);                             // nose pointing up
+                line(g, 48, 138, 56, 136, 3, "d");                 // closed eye
+                const z = (t * 0.5) % 1;
+                circle(g, 76 + z * 26, 106 - z * 50, 6 * (1 - z) + 1.5, "a");
+                return [["face up, on their back", 120, 210, "below"]];
+              } },
+            { text: "In a clear cot: firm flat mattress, no pillows, toys, or bumpers.",
+              draw(g, p) {
+                cot(g, 56, 20, 128, 200);
+                babyTop(g, 120, 84, 0.9);
+                const k = seg(p, 0.25, 0.75);
+                if (k < 1) {                                       // pillow and teddy leave the cot
+                  ellipse(g, lerp(90, -40, k), 186, 22, 14, 0, "a");
+                  const tx = lerp(152, 280, k);
+                  circle(g, tx, 186, 14, "a"); circle(g, tx - 10, 170, 6, "a"); circle(g, tx + 10, 170, 6, "a");
+                }
+                return [["nothing else in the cot", 120, 236, "below"]];
+              } },
+            { text: "Never fall asleep with your baby on a sofa or armchair. If you're very sleepy, put baby down in their cot.",
+              draw(g, p) {
+                rrect(g, 24, 112, 192, 50, 18, "l");               // sofa seat
+                rrect(g, 24, 70, 192, 46, 18, "l");                // sofa back
+                rrect(g, 12, 96, 32, 72, 12, "l"); rrect(g, 196, 96, 32, 72, 12, "l"); // arms
+                rrect(g, 34, 166, 12, 18, 4, "l"); rrect(g, 194, 166, 12, 18, 4, "l"); // legs
+                const k = seg(p, 0.1, 0.45), k2 = seg(p, 0.45, 0.8);
+                line(g, 52, 56, lerp(52, 188, k), lerp(56, 196, k), 12, "a");
+                if (k2 > 0) line(g, 188, 56, lerp(188, 52, k2), lerp(56, 196, k2), 12, "a");
+                return [["not on a sofa", 120, 222, "below"]];
+              } },
+          ],
+        },
+      ];
+
+      // ---- player ----
+      const sheet = $("#guides"), listEl = $("#guide-list"), playerEl = $("#guide-player");
+      const canvas = $("#guide-canvas"), caption = $("#guide-caption"), stepEl = $("#guide-step");
+      const prevBtn = $("#guide-prev"), nextBtn = $("#guide-next"), ytLink = $("#guide-yt"), titleEl = $("#guide-title");
+      const S = 240;
+      const ctx = canvas.getContext("2d");
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+      const darkMq = matchMedia("(prefers-color-scheme: dark)");
+      let current = null, step = 0, raf = 0, startedAt = 0, lastFrame = 0, lastFocus = null;
+      const LOOP = 4.5; // seconds per step animation
+
+      // Simple flat colors that read clearly in both day and night mode.
+      function colors() {
+        const cs = getComputedStyle(document.documentElement);
+        const v = (n) => cs.getPropertyValue(n).trim();
+        const dark = darkMq.matches;
+        PAL = {
+          x: v("--bg"),
+          m: dark ? "#EDC3A6" : "#E9B697",   // baby's skin
+          c: dark ? "#8FA6BC" : "#7F95AB",   // baby's onesie: soft blue so baby stands out from you
+          l: dark ? "#8C7262" : "#E2CDB8",   // you, the blanket, the cot
+          ar: dark ? "#B97F6C" : "#C98E78",  // areola and nipple
+          a: dark ? "#F0A2B2" : "#D9788C",   // the thing to notice
+          d: dark ? "#3A2A24" : "#5A3E36",   // eyes, ears
+          in: "#8E4A4A",                     // inside the mouth
+          bl: dark ? "#F2B1AE" : "#F0A8A0",  // rosy cheek
+          sk: dark ? "#C99476" : "#D9A887",  // your skin
+          sk2: dark ? "#B58266" : "#C99474", // your hand, a shade deeper so it stands out on the breast
+          top: dark ? "#6F7F69" : "#A9B79F", // your top
+          hr: dark ? "#7A5644" : "#5E4034",  // your hair
+          nip: dark ? "#8F5747" : "#A86450", // nipple
+          ink: v("--ink"),
+          bg: v("--bg"),
+        };
+        return PAL;
+      }
+      let col = colors();
+      darkMq.addEventListener?.("change", () => { col = colors(); });
+
+      function label(text, x, y, where) {
+        ctx.font = `600 10px ${getComputedStyle(document.documentElement).getPropertyValue("--sans")}`;
+        const w = ctx.measureText(text).width + 12, h = 17;
+        let lx = where === "right" ? x : x - w / 2;
+        lx = Math.max(3, Math.min(S - w - 3, lx));
+        const ly = Math.max(3, Math.min(S - h - 3, y - h / 2));
+        ctx.fillStyle = col.bg;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath(); ctx.roundRect(lx, ly, w, h, 8); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = col.ink;
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, lx + 6, ly + h / 2 + 0.5);
+      }
+
+      function render(now) {
+        if (!reduce.matches) raf = requestAnimationFrame(render);
+        if (now - lastFrame < 33) return; // ~30 fps
+        lastFrame = now;
+        const t = (now - startedAt) / 1000;
+        const p = reduce.matches ? 1 : (t % LOOP) / LOOP;
+
+        const size = canvas.clientWidth || 300, dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const px = Math.round(size * dpr);
+        if (canvas.width !== px || canvas.height !== px) canvas.width = canvas.height = px;
+        ctx.setTransform(px / S, 0, 0, px / S, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = col.bg;
+        ctx.fillRect(0, 0, S, S);
+        ctx.save();
+        const labels = current.steps[step].draw(ctx, p, t) || [];
+        ctx.restore();
+
+        // labels fade in once the movement has happened
+        if (p > 0.35 || reduce.matches) {
+          ctx.globalAlpha = reduce.matches ? 1 : Math.min(1, (p - 0.35) / 0.15);
+          for (const [text, x, y, where] of labels) label(tx(text), x, y, where);
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      function showStep(i) {
+        step = Math.max(0, Math.min(current.steps.length - 1, i));
+        caption.textContent = tx(current.steps[step].text);
+        stepEl.textContent = t("step", { n: step + 1, m: current.steps.length });
+        prevBtn.disabled = step === 0;
+        nextBtn.textContent = step === current.steps.length - 1 ? t("again") : t("next");
+        startedAt = performance.now();
+        lastFrame = 0;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(render);
+      }
+
+      function openGuide(id) {
+        current = LIST.find((x) => x.id === id);
+        if (!current) return;
+        titleEl.textContent = tx(current.title);
+        // Translate this guide's words (titles, captions, picture labels) into her language.
+        if (LANG !== "en") {
+          const g2 = document.createElement("canvas").getContext("2d");
+          const words = [current.title];
+          current.steps.forEach((st) => { words.push(st.text); try { (st.draw(g2, 1, 0) || []).forEach((l) => words.push(l[0])); } catch {} });
+          const forId = current.id;
+          ensureTr(words).then(() => { if (current && current.id === forId) { titleEl.textContent = tx(current.title); showStep(step); } });
+        }
+        ytLink.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(current.youtube);
+        listEl.hidden = true;
+        playerEl.hidden = false;
+        $("#guide-back").classList.remove("is-hidden");
+        if (sheet.hidden) openSheet();
+        showStep(0);
+        nextBtn.focus();
+      }
+
+      function showList() {
+        cancelAnimationFrame(raf);
+        current = null;
+        titleEl.textContent = t("guides");
+        playerEl.hidden = true;
+        listEl.hidden = false;
+        $("#guide-back").classList.add("is-hidden");
+      }
+
+      function openSheet() {
+        lastFocus = document.activeElement;
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+      }
+      function close() {
+        cancelAnimationFrame(raf);
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+
+      function renderGuideList() {
+        listEl.textContent = "";
+        LIST.forEach((x) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "guide-item";
+          b.innerHTML = `<span class="guide-name"></span><span class="guide-blurb"></span>`;
+          b.querySelector(".guide-name").textContent = tx(x.title);
+          b.querySelector(".guide-blurb").textContent = tx(x.blurb);
+          b.addEventListener("click", () => openGuide(x.id));
+          listEl.appendChild(b);
+        });
+      }
+      renderGuideList();
+      onLang(() => {
+        prevBtn.textContent = t("back");
+        ytLink.textContent = t("youtube");
+        if (!current) titleEl.textContent = t("guides");
+        renderGuideList();
+        ensureTr(LIST.flatMap((x) => [x.title, x.blurb])).then(renderGuideList);
+        if (current && !sheet.hidden) openGuide(current.id);
+      });
+
+      const guideListen = listenButton(() => caption.textContent);
+      $("#guide-listen").appendChild(guideListen);
+      onLang(() => { guideListen.querySelector("span").textContent = t("listen"); });
+      prevBtn.addEventListener("click", () => { voice.stopSpeaking(); showStep(step - 1); });
+      nextBtn.addEventListener("click", () => { voice.stopSpeaking(); showStep(step === current.steps.length - 1 ? 0 : step + 1); });
+      $("#guide-back").addEventListener("click", showList);
+      $("#guide-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => {
+        if (sheet.hidden) return;
+        if (e.key === "Escape") close();
+        if (current && e.key === "ArrowRight") showStep(step + 1);
+        if (current && e.key === "ArrowLeft") showStep(step - 1);
+      });
+
+      function match(question, answer) {
+        return LIST.find((x) => x.words.test(question)) || LIST.find((x) => x.words.test(answer)) || null;
+      }
+
+      return {
+        titleOf: (id) => tx((LIST.find((x) => x.id === id) || {}).title || ""),
+        openList() { showList(); openSheet(); listEl.querySelector("button")?.focus(); },
+        open: openGuide,
+        match,
+      };
+    })();
+
+    // ---- Library: warm articles about feeding, diapers, sleep and recovery ----
+    const library = (() => {
+      const data = window.MOTHERHOOD_LIBRARY || { cats: [], articles: [] };
+      const sheet = $("#library"), home = $("#lib-home"), listEl = $("#lib-list"), view = $("#lib-article");
+      const search = $("#lib-search"), backBtn = $("#lib-back"), titleEl = $("#lib-title");
+      let lastFocus = null;
+
+      const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+      const textOf = (a) => [a.title, a.blurb, ...a.body.flatMap((b) => [b.h || "", b.p || "", ...(b.list || [])]), ...(a.help || [])]
+        .flatMap((x) => [x, tx(x)]).join(" ").toLowerCase(); // search works in English and her language
+
+      function renderList(q = "") {
+        listEl.textContent = "";
+        const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+        const hits = data.articles.filter((a) => !words.length || words.every((w) => textOf(a).includes(w)));
+        if (!hits.length) {
+          listEl.appendChild(el("p", "lib-empty", t("nothing")));
+          return;
+        }
+        for (const c of data.cats) {
+          const inCat = hits.filter((a) => a.cat === c.id);
+          if (!inCat.length) continue;
+          listEl.appendChild(el("h3", "lib-cat", tx(c.name)));
+          const wrap = el("div", "lib-items");
+          for (const a of inCat) {
+            const b = el("button", "lib-item");
+            b.type = "button";
+            b.append(el("b", "", tx(a.title)), el("span", "", tx(a.blurb)));
+            b.addEventListener("click", () => openArticle(a.id));
+            wrap.appendChild(b);
+          }
+          listEl.appendChild(wrap);
+        }
+      }
+
+      // Week by week: pick a week (or enter a due date) and see baby and you that week.
+      function renderWeeks(startWeek) {
+        const weeks = data.weeks || [];
+        if (!weeks.length) return;
+        let saved = null;
+        try { saved = localStorage.getItem("motherhood-due"); } catch {}
+        const weekFromDue = (iso) => {
+          const due = new Date(iso + "T12:00:00");
+          if (isNaN(due)) return null;
+          const daysLeft = Math.round((due - new Date()) / 86400000);
+          return Math.floor((280 - daysLeft) / 7);
+        };
+        const clamp = (w) => Math.max(weeks[0].w, Math.min(weeks[weeks.length - 1].w, w));
+        let week = clamp(startWeek || (saved && weekFromDue(saved)) || 12);
+
+        const due = el("label", "wk-due");
+        due.append(el("span", "", t("dueDate")));
+        const dueIn = el("input");
+        dueIn.type = "date";
+        if (saved) dueIn.value = saved;
+        due.appendChild(dueIn);
+        const dueMsg = el("span", "");
+        due.appendChild(dueMsg);
+
+        const card = el("div", "wk-card");
+        const nav = el("div", "wk-nav");
+        const prev = el("button", "pill quiet", "Back"); prev.type = "button"; prev.setAttribute("aria-label", "Previous week");
+        const next = el("button", "pill quiet", "Next"); next.type = "button"; next.setAttribute("aria-label", "Next week");
+        const range = el("input");
+        range.type = "range"; range.min = weeks[0].w; range.max = weeks[weeks.length - 1].w; range.step = 1;
+        range.setAttribute("aria-label", "Pregnancy week");
+        nav.append(prev, range, next);
+
+        function show() {
+          const d = weeks.find((x) => x.w === week);
+          range.value = week;
+          prev.disabled = week <= weeks[0].w;
+          next.disabled = week >= weeks[weeks.length - 1].w;
+          card.textContent = "";
+          const dot = el("div", "wk-dot");
+          dot.style.transform = `scale(${0.35 + 0.65 * ((week - 4) / 36)})`;
+          dot.setAttribute("aria-hidden", "true");
+          card.append(el("p", "wk-num", t("week", { n: week })), dot, el("p", "wk-size", t("sizeOf", { x: tx(d.fruit) })), el("p", "wk-len", tx(d.size)));
+          for (const [h, body] of [[t("yourBaby"), d.baby], [t("you"), d.you], [t("tip"), d.tip]]) {
+            const sec = el("div", "lib-sec");
+            sec.append(el("h4", "", h), el("p", "", tx(body)));
+            card.appendChild(sec);
+          }
+          const shown = week;
+          ensureTr([d.fruit, d.size, d.baby, d.you, d.tip]).then(() => { if (shown === week && view.isConnected) {
+            card.querySelector(".wk-size").textContent = t("sizeOf", { x: tx(d.fruit) });
+            card.querySelector(".wk-len").textContent = tx(d.size);
+            card.querySelectorAll(".lib-sec p").forEach((pEl, i) => { pEl.textContent = tx([d.baby, d.you, d.tip][i]); });
+          } });
+        }
+        const listenRow = el("div", "listen-row");
+        listenRow.appendChild(listenButton(() => [...card.querySelectorAll("p, h4")].map((n) => n.textContent).join(". ")));
+        prev.addEventListener("click", () => { week = clamp(week - 1); show(); });
+        next.addEventListener("click", () => { week = clamp(week + 1); show(); });
+        range.addEventListener("input", () => { week = clamp(+range.value); show(); });
+        dueIn.addEventListener("change", () => {
+          const w = weekFromDue(dueIn.value);
+          if (w == null) return;
+          try { localStorage.setItem("motherhood-due", dueIn.value); } catch {}
+          if (w < weeks[0].w) dueMsg.textContent = t("early");
+          else if (w > 40) dueMsg.textContent = t("past");
+          else dueMsg.textContent = t("aboutWeeks", { n: w });
+          week = clamp(w);
+          show();
+        });
+        view.append(due, card, listenRow, nav, el("p", "wk-note", t("weeksNote")));
+        show();
+      }
+
+      function openArticle(id, opts = {}) {
+        const a = data.articles.find((x) => x.id === id);
+        if (!a) return;
+        if (sheet.hidden) openSheet();
+        view.textContent = "";
+        view.append(el("h3", "", tx(a.title)), el("p", "lib-blurb", tx(a.blurb)));
+        if (a.weekly) renderWeeks(opts.week);
+        // Translate the article into her language, then show it again.
+        if (LANG !== "en" && !a.weekly && !opts.translated) {
+          const words = [a.title, a.blurb, ...a.body.flatMap((b) => [b.h, b.p, ...(b.list || [])]), ...(a.help || [])].filter(Boolean);
+          const missing = words.some((w) => tx(w) === w);
+          if (missing) {
+            view.appendChild(el("p", "tr-note", t("translating")));
+            ensureTr(words).then((ok) => { if (!view.hidden && openId === a.id) openArticle(a.id, { ...opts, translated: true }); });
+          }
+        }
+        openId = a.id;
+        for (const b of a.body) {
+          if (b.h) view.appendChild(el("h4", "", tx(b.h)));
+          if (b.p) view.appendChild(el("p", "", tx(b.p)));
+          if (b.list) {
+            const ul = el("ul");
+            b.list.forEach((x) => ul.appendChild(el("li", "", tx(x))));
+            view.appendChild(ul);
+          }
+        }
+        if (a.help && a.help.length) {
+          const box = el("div", "lib-help");
+          box.appendChild(el("h4", "", t("whenHelp")));
+          const ul = el("ul");
+          a.help.forEach((x) => ul.appendChild(el("li", "", tx(x))));
+          box.appendChild(ul);
+          view.appendChild(box);
+        }
+        const actions = el("div", "lib-actions");
+        actions.appendChild(listenButton(() => [...view.querySelectorAll("h3, .lib-blurb, h4, p:not(.lib-source):not(.tr-note), li")].map((n) => n.textContent).join(". ")));
+        if (a.guide) {
+          const g = el("button", "pill", t("watchGuide"));
+          g.type = "button";
+          g.addEventListener("click", () => { close(); guides.open(a.guide); });
+          actions.appendChild(g);
+        }
+        const ask = el("button", "pill quiet", t("askAbout"));
+        ask.type = "button";
+        ask.addEventListener("click", () => {
+          close();
+          input.value = `"${tx(a.title)}": `;
+          autosize();
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        });
+        actions.appendChild(ask);
+        view.appendChild(actions);
+        if (LANG !== "en" && opts.translated) view.appendChild(el("p", "tr-note", t("translated")));
+        view.appendChild(el("p", "lib-source", t("sources")));
+        home.hidden = true;
+        view.hidden = false;
+        backBtn.classList.remove("is-hidden");
+        titleEl.textContent = t("library");
+        if (!opts.translated) sheet.querySelector(".sheet-panel").scrollTop = 0;
+        backBtn.focus();
+      }
+
+      function showHome() {
+        view.hidden = true;
+        home.hidden = false;
+        backBtn.classList.add("is-hidden");
+      }
+      function openSheet() {
+        lastFocus = document.activeElement;
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+      }
+      function close() {
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus && lastFocus !== input) lastFocus.focus();
+      }
+
+      search.addEventListener("input", () => renderList(search.value));
+      backBtn.addEventListener("click", showHome);
+      $("#lib-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => { if (!sheet.hidden && e.key === "Escape") close(); });
+      let openId = null;
+      $("#library-btn").addEventListener("click", () => { showHome(); renderList(search.value); openSheet(); search.focus(); });
+      renderList();
+      onLang(() => {
+        titleEl.textContent = t("library");
+        $("#library .lib-intro").textContent = t("libIntro");
+        search.placeholder = t("search");
+        renderList(search.value);
+        const listWords = [...data.cats.map((c) => c.name), ...data.articles.flatMap((a) => [a.title, a.blurb])];
+        ensureTr(listWords).then(() => renderList(search.value));
+        if (!sheet.hidden && !view.hidden && openId) openArticle(openId);
+      });
+
+      function match(question, answer) {
+        const ok = (a, text) => a.words.test(text) && (!a.needs || a.needs.test(question));
+        const found = data.articles.find((a) => ok(a, question)) || data.articles.find((a) => ok(a, answer)) || null;
+        const wk = /\b(\d{1,2}) ?(weeks?|wks?)\b/i.exec(question);
+        return found ? { ...found, week: found.weekly && wk ? +wk[1] : undefined } : null;
+      }
+      return { open: openArticle, match, titleOf: (a) => tx(a.title) };
+    })();
+
+    // ---- Myth or safe? Family traditions, answered with respect ----
+    const myths = (() => {
+      const data = window.MOTHERHOOD_MYTHS || [];
+      const sheet = $("#myths"), listEl = $("#myth-list"), trNote = $("#myth-tr");
+      let lastFocus = null;
+      const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+      const verdictText = (v) => t(v === "no" ? "vNo" : v === "care" ? "vCare" : "vYes");
+
+      async function share(m) {
+        const text = `${tx(m.title)}\n${verdictText(m.verdict)}\n\n${tx(m.why)}\n\n${t("instead")}: ${tx(m.instead)}\n\nMotherhood`;
+        try {
+          if (navigator.share) { await navigator.share({ title: tx(m.title), text }); return; }
+        } catch (e) { if (e && e.name === "AbortError") return; }
+        try { await navigator.clipboard.writeText(text); say(t("copied")); } catch { say(t("copied")); }
+      }
+
+      function render(focusId) {
+        listEl.textContent = "";
+        $("#myth-title").textContent = t("myths");
+        $("#myth-intro").textContent = t("mythsIntro");
+        $("#myth-ask").textContent = t("askOther");
+        for (const m of data) {
+          const card = el("article", "myth");
+          card.id = "myth-" + m.id;
+          card.append(el("span", "verdict " + m.verdict, verdictText(m.verdict)), el("h3", "", tx(m.title)));
+          card.append(el("h4", "", t("whyLabel")), el("p", "", tx(m.why)), el("h4", "", t("instead")), el("p", "", tx(m.instead)));
+          const actions = el("div", "lib-actions");
+          actions.appendChild(listenButton(() => [...card.querySelectorAll(".verdict, h3, h4, p")].map((n) => n.textContent).join(". ")));
+          const sh = el("button", "pill quiet", t("share"));
+          sh.type = "button";
+          sh.addEventListener("click", () => share(m));
+          actions.appendChild(sh);
+          if (m.guide) {
+            const g = el("button", "pill quiet", t("watchGuide"));
+            g.type = "button";
+            g.addEventListener("click", () => { close(); guides.open(m.guide); });
+            actions.appendChild(g);
+          }
+          card.appendChild(actions);
+          listEl.appendChild(card);
+        }
+        if (focusId) {
+          const c = $("#myth-" + focusId);
+          if (c) { c.scrollIntoView({ block: "start" }); c.setAttribute("tabindex", "-1"); c.focus({ preventScroll: true }); }
+        }
+      }
+
+      async function translateAll(focusId) {
+        if (LANG === "en") { trNote.hidden = true; return; }
+        const words = data.flatMap((m) => [m.title, m.why, m.instead]);
+        if (words.every((w) => tx(w) !== w)) { trNote.hidden = false; trNote.textContent = t("translated"); return; }
+        trNote.hidden = false; trNote.textContent = t("translating");
+        const ok = await ensureTr(words);
+        trNote.textContent = ok ? t("translated") : "";
+        if (!sheet.hidden) render(focusId);
+      }
+
+      function open(focusId) {
+        lastFocus = document.activeElement;
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+        render(focusId);
+        translateAll(focusId);
+        if (!focusId) $("#myth-close").focus();
+      }
+      function close() {
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      $("#myth-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => { if (!sheet.hidden && e.key === "Escape") close(); });
+      $("#myth-ask").addEventListener("click", () => {
+        close();
+        input.value = t("askOtherText");
+        autosize();
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      });
+      onLang(() => { if (!sheet.hidden) { render(); translateAll(); } });
+
+      function match(question, answer) {
+        return data.find((m) => m.words.test(question)) || null; // only from what she asked, so answers don't trigger it
+      }
+      return { open, match, titleOf: (m) => tx(m.title) };
+    })();
+
+    // Library home: a card that opens the myth checker.
+    (() => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "lib-item myth-entry";
+      card.append(document.createElement("b"), document.createElement("span"));
+      const fill = () => { card.firstChild.textContent = t("myths"); card.lastChild.textContent = t("mythsIntro"); };
+      fill();
+      onLang(fill);
+      card.addEventListener("click", () => { $("#lib-close").click(); myths.open(); });
+      $("#lib-search").after(card);
+    })();
+
+    // New chat: start fresh, any time.
+    (() => {
+      const btn = $("#new-btn");
+      const show = () => { btn.hidden = history.length === 0 || busy; $("#new-text").textContent = t("newChat"); };
+      btn.addEventListener("click", () => {
+        if (busy) return;
+        voice.stopSpeaking();
+        history = [];
+        save();
+        log.textContent = "";
+        try { sessionStorage.removeItem("crisis"); } catch {}
+        document.body.classList.remove("crisis-on");
+        refreshMode();
+        quiet();
+        show();
+        input.focus();
+      });
+      onLang(show);
+      new MutationObserver(show).observe(log, { childList: true });
+      new MutationObserver(show).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      show();
+    })();
+
+
+    // ---- Voice settings: pick the voice, speed and pitch she likes ----
+    const voiceSettings = (() => {
+      const sheet = $("#voice-sheet"), list = $("#vs-list"), empty = $("#vs-empty");
+      let lastFocus = null, picked = null; // picked: voice name, or "" for automatic
+      const SPEEDS = [["slower", 0.85], ["normal", 1], ["faster", 1.15]];
+      const PITCHES = [["lower", 0.9], ["normal", 1], ["higher", 1.1]];
+      let rate = 1, pitch = 1;
+      const clean = (name) => name
+        .replace(/^(Microsoft|Google|Apple)\s+/i, "")
+        .replace(/\s*-\s*.*$/, "")
+        .replace(/\s*\((Natural|Enhanced|Premium)\)/i, "")
+        .replace(/\s+Online/i, "")
+        .trim() || name;
+
+      function row(name, sub, natural, sv) {
+        const r = document.createElement("div");
+        r.className = "vs-row";
+        r.setAttribute("role", "radio");
+        r.tabIndex = 0;
+        r.setAttribute("aria-checked", String(picked === (sv ? sv.name : "")));
+        const dot = document.createElement("span"); dot.className = "vs-radio";
+        const txt = document.createElement("span"); txt.className = "vs-name";
+        const b = document.createElement("b"); b.textContent = name;
+        const sm = document.createElement("span"); sm.textContent = sub;
+        txt.append(b, sm);
+        r.append(dot, txt);
+        if (natural) { const tg = document.createElement("span"); tg.className = "vs-tag"; tg.textContent = t("natural"); r.appendChild(tg); }
+        const play = document.createElement("button");
+        play.type = "button"; play.className = "vs-play"; play.textContent = t("play");
+        const v = sv;
+        play.onclick = (e) => { e.stopPropagation(); voiceApi().preview(t("voiceSample"), { voice: v || autoVoice(), rate, pitch }); };
+        r.appendChild(play);
+        const choose = () => { picked = v ? v.name : ""; save(); render(); };
+        r.addEventListener("click", choose);
+        r.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(); } });
+        return r;
+      }
+      const voiceApi = () => voice;
+      // The voice "Automatic" would use right now, for its Play button.
+      function autoVoice() {
+        const keep = voice.myPrefs();
+        voice.setPrefs({ ...keep, name: "" });
+        const v = voice.current;
+        voice.setPrefs(keep);
+        return v;
+      }
+
+      function seg(el, options, value, onPick) {
+        el.textContent = "";
+        for (const [key, val] of options) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.setAttribute("role", "radio");
+          b.setAttribute("aria-checked", String(Math.abs(val - value) < 0.01));
+          b.textContent = t(key);
+          b.addEventListener("click", () => { onPick(val); save(); render(); });
+          el.appendChild(b);
+        }
+      }
+
+      let pickedCloud = "";
+      function save() { voice.setPrefs({ name: picked || "", rate, pitch, cloudVoice: pickedCloud || "" }); }
+
+      function render() {
+        $("#voice-title").textContent = t("voiceMenu");
+        $("#vs-choose").textContent = t("chooseVoice");
+        $("#vs-speed-h").textContent = t("speed");
+        $("#vs-pitch-h").textContent = t("pitch");
+        $("#vs-try").textContent = t("tryIt");
+        $("#vs-reset").textContent = t("resetVoice");
+        $("#vs-note").textContent = t("voiceNote");
+        $("#vs-clone-h").textContent = t("cloneSection");
+        const cl = $("#vs-clone");
+        cl.textContent = "";
+        const msg = document.createElement("span");
+        if (clone.active) {
+          msg.textContent = t("cloneLabel", { x: clone.active.name });
+          const off = document.createElement("button");
+          off.type = "button"; off.className = "vs-play"; off.textContent = t("cloneOff");
+          off.addEventListener("click", async () => { await clone.disable(); render(); });
+          cl.append(msg, off);
+        } else {
+          msg.textContent = t("cloneNone");
+          const go = document.createElement("button");
+          go.type = "button"; go.className = "vs-play"; go.textContent = t("vTitle");
+          go.addEventListener("click", () => { close(); village.open(); });
+          cl.append(msg, go);
+        }
+        if (cloud.enabled) {
+          list.textContent = "";
+          empty.hidden = true;
+          const cv = cloud.voicesFor(LANG);
+          cv.forEach((name, i) => {
+            const nice = name.split("-").pop().replace(/Neural$/, "");
+            const r = document.createElement("div");
+            r.className = "vs-row"; r.setAttribute("role", "radio"); r.tabIndex = 0;
+            const on = (pickedCloud || cv[0]) === name;
+            r.setAttribute("aria-checked", String(on));
+            const dot = document.createElement("span"); dot.className = "vs-radio";
+            const txt = document.createElement("span"); txt.className = "vs-name";
+            const b = document.createElement("b"); b.textContent = nice;
+            const sm = document.createElement("span"); sm.textContent = name.slice(0, 5);
+            txt.append(b, sm);
+            const tg = document.createElement("span"); tg.className = "vs-tag"; tg.textContent = t("natural");
+            const play = document.createElement("button"); play.type = "button"; play.className = "vs-play"; play.textContent = t("play");
+            play.onclick = async (e) => {
+              e.stopPropagation();
+              voice.stopSpeaking();
+              try {
+                const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ text: t("voiceSample"), lang: LANG, voice: name, rate, pitch }) });
+                if (res.ok) { const u = URL.createObjectURL(await res.blob()); player.play(u).then(() => URL.revokeObjectURL(u)); }
+              } catch {}
+            };
+            r.append(dot, txt, tg, play);
+            const choose = () => { pickedCloud = name; save(); render(); };
+            r.addEventListener("click", choose);
+            r.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(); } });
+            list.appendChild(r);
+          });
+          seg($("#vs-speed"), SPEEDS, rate, (v) => (rate = v));
+          seg($("#vs-pitch"), PITCHES, pitch, (v) => (pitch = v));
+          return;
+        }
+        const voices = voice.voicesForLang()
+          .slice()
+          .sort((a, b) => Number(voice.isNatural(b)) - Number(voice.isNatural(a)) || a.name.localeCompare(b.name));
+        list.textContent = "";
+        empty.hidden = voices.length > 0;
+        empty.textContent = t("noVoices");
+        if (voices.length) {
+          list.appendChild(row(t("autoVoice"), "", false, null));
+          for (const v of voices) list.appendChild(row(clean(v.name), v.lang, voice.isNatural(v), v));
+        }
+        seg($("#vs-speed"), SPEEDS, rate, (v) => (rate = v));
+        seg($("#vs-pitch"), PITCHES, pitch, (v) => (pitch = v));
+      }
+
+      function open() {
+        const p = voice.myPrefs();
+        picked = p.name || "";
+        pickedCloud = p.cloudVoice || "";
+        rate = p.rate || 1;
+        pitch = p.pitch || 1;
+        lastFocus = document.activeElement;
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+        render();
+        $("#voice-close").focus();
+      }
+      function close() {
+        voice.stopSpeaking();
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      $("#voice-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => { if (!sheet.hidden && e.key === "Escape") close(); });
+      $("#vs-try").addEventListener("click", () => voice.readAloud(t("voiceSample")));
+      $("#vs-reset").addEventListener("click", () => { picked = ""; pickedCloud = ""; rate = 1; pitch = 1; voice.setPrefs({}); render(); });
+      voice.onVoices(() => { if (!sheet.hidden) render(); });
+      onLang(() => { if (!sheet.hidden) open(); });
+      return { open };
+    })();
+
+    // ---- Voices from your village: real voice messages from the people she loves ----
+    // Recordings stay on this device only (the browser's private database). Nothing is uploaded.
+    const village = (() => {
+      const sheet = $("#village-sheet"), peopleEl = $("#vv-people"), form = $("#vv-form");
+      const PEOPLE_KEY = "mh-village-people";
+      let people = [];
+      try { people = JSON.parse(localStorage.getItem(PEOPLE_KEY) || "[]"); } catch {}
+      const savePeople = () => { try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch {} };
+      let lastFocus = null, playing = null, playingBtn = null, recorder = null, recFor = null, consentFor = null;
+      let consentTicked = false, consentProblem = "";
+      const durationOf = (blob) => new Promise((resolve) => {
+        const a = new Audio(URL.createObjectURL(blob));
+        a.onloadedmetadata = () => resolve(isFinite(a.duration) ? a.duration : 0);
+        a.onerror = () => resolve(0);
+      });
+
+      // a tiny wrapper around IndexedDB for the audio clips
+      const db = new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("no storage"));
+        const req = indexedDB.open("motherhood", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("clips", { keyPath: "id" });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const dbTx = async (mode, fn) => {
+        const d = await db;
+        return new Promise((resolve, reject) => {
+          const t = d.transaction("clips", mode), store = t.objectStore("clips");
+          const out = fn(store);
+          t.oncomplete = () => resolve(out && out.result);
+          t.onerror = () => reject(t.error);
+        });
+      };
+      const everything = () => dbTx("readonly", (st) => st.getAll());
+      const allClips = async () => (await everything()).filter((c) => c.kind !== "sample"); // messages only
+      const addClip = (clip) => dbTx("readwrite", (st) => st.put(clip));
+      const delClip = (id) => dbTx("readwrite", (st) => st.delete(id));
+      const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      // the short voice sample for the AI voice, one per person
+      const saveSample = (person, blob) => addClip({ id: "sample-" + person, kind: "sample", person, created: Date.now(), blob });
+      const getSample = async (person) => ((await everything()).find((c) => c.id === "sample-" + person) || {}).blob || null;
+      const deleteSample = (person) => delClip("sample-" + person);
+
+      function stopAudio() {
+        if (playing) { playing.pause(); URL.revokeObjectURL(playing.src); playing = null; }
+        if (playingBtn) { playingBtn.setAttribute("aria-pressed", "false"); playingBtn.textContent = t("vPlay"); playingBtn = null; }
+      }
+      function play(clip, btn) {
+        if (btn && playingBtn === btn) return stopAudio(); // second tap pauses
+        stopAudio();
+        voice.stopSpeaking();
+        const a = new Audio(URL.createObjectURL(clip.blob));
+        playing = a;
+        if (btn) { playingBtn = btn; btn.setAttribute("aria-pressed", "true"); btn.textContent = t("vPause"); }
+        a.onended = stopAudio;
+        a.play().catch(() => stopAudio());
+      }
+
+      const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+      const small = (text, onClick, extra = "") => { const b = el("button", "vv-small " + extra, text); b.type = "button"; b.addEventListener("click", onClick); return b; };
+
+      async function render() {
+        $("#vv-title").textContent = t("vTitle");
+        $("#vv-intro").textContent = t("vIntro");
+        $("#vv-grief").textContent = t("vGrief");
+        $("#vv-add-btn").textContent = t("vAddPerson");
+        $("#vv-name").placeholder = t("vName");
+        $("#vv-consent-text").textContent = t("vConsent");
+        $("#vv-save").textContent = t("vSave");
+        $("#vv-cancel").textContent = t("vCancel");
+        let clips = [];
+        try { clips = await allClips(); } catch {}
+        peopleEl.textContent = "";
+        if (!people.length) peopleEl.appendChild(el("p", "vv-empty", t("vEmpty")));
+        for (const person of people) {
+          const card = el("section", "vv-person");
+          card.appendChild(el("h3", "", person.name));
+          const mine = clips.filter((c) => c.person === person.id).sort((a, b) => a.created - b.created);
+          if (!mine.length) card.appendChild(el("p", "vv-empty", t("vNoMsgs")));
+          mine.forEach((clip, i) => {
+            const row = el("div", "vv-clip");
+            const pb = small(t("vPlay"), () => play(clip, pb));
+            pb.setAttribute("aria-pressed", "false");
+            row.append(pb, el("span", "", t("vMsg", { n: i + 1 })), small(t("vDelete"), async () => { stopAudio(); await delClip(clip.id); render(); refreshChip(); }, "danger"));
+            card.appendChild(row);
+          });
+          const tools = el("div", "vv-tools");
+          const recBtn = small(recFor === person.id ? t("vStop") : t("vRecord"), () => toggleRecord(person));
+          const upBtn = small(t("vUpload"), () => pickFile(person));
+          const rm = small(t("vRemovePerson"), async () => {
+            if (!confirm(t("vSureRemove", { x: person.name }))) return;
+            stopAudio();
+            for (const c of mine) await delClip(c.id);
+            if (clone.active && clone.active.person === person.id) await clone.disable();
+            people = people.filter((x) => x.id !== person.id);
+            savePeople(); render(); refreshChip();
+          }, "danger");
+          tools.append(recBtn, upBtn, rm);
+          card.appendChild(tools);
+          // A loved one's voice (AI): read my answers in this person's voice, after she agrees.
+          if (mine.length) {
+            const ai = el("div", "vv-ai");
+            const on = clone.active && clone.active.person === person.id;
+            if (on) {
+              ai.append(el("p", "vv-ai-on", t("cloneOn")), small(t("cloneOff"), async () => { await clone.disable(); render(); }));
+            } else if (consentFor === person.id) {
+              const box = el("label", "vv-consent");
+              const cb = el("input"); cb.type = "checkbox"; cb.checked = consentTicked;
+              cb.addEventListener("change", () => { consentTicked = cb.checked; });
+              box.append(cb, el("span", "", t("cloneConsent", { x: person.name })));
+              const problem = el("p", "vv-err", consentProblem || "");
+              problem.hidden = !consentProblem;
+              problem.setAttribute("role", "alert");
+              const go = small(t("cloneAgree"), async () => {
+                if (!cb.checked) { cb.focus(); return; }
+                go.disabled = true; go.textContent = t("cloneMaking");
+                problem.hidden = true;
+                try {
+                  await clone.enable(person, mine.map((c) => c.blob)); // all their recordings, joined if short
+                  consentFor = null; consentTicked = false; consentProblem = "";
+                } catch (e) {
+                  consentProblem = e && e.message === "short" ? t("cloneShort") : e && e.message === "decode" ? t("cloneDecode") : t("cloneFallback");
+                }
+                render();
+              });
+              ai.append(box, el("p", "vv-ai-note", t("cloneSafety")), go, problem,
+                small(t("vCancel"), () => { consentFor = null; consentTicked = false; consentProblem = ""; render(); }));
+            } else {
+              ai.appendChild(small(t("cloneUse"), () => { consentFor = person.id; consentTicked = false; consentProblem = ""; render(); }));
+            }
+            card.appendChild(ai);
+          }
+          if (recFor === person.id) card.appendChild(el("p", "vv-rec", t("vRecording")));
+          peopleEl.appendChild(card);
+        }
+      }
+
+      async function store(person, blob) {
+        if (blob.size > 15 * 1024 * 1024) { say(t("vTooBig")); return; }
+        await addClip({ id: uid(), person: person.id, created: Date.now(), blob });
+        render(); refreshChip();
+      }
+      function pickFile(person) {
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "audio/*,video/mp4,video/*,.opus,.ogg,.m4a,.aac";
+        inp.onchange = () => { if (inp.files[0]) store(person, inp.files[0]); };
+        inp.click();
+      }
+      async function toggleRecord(person) {
+        if (recorder) { recorder.stop(); return; }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const chunks = [];
+          recorder = new MediaRecorder(stream);
+          recFor = person.id;
+          recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+          recorder.onstop = () => {
+            stream.getTracks().forEach((tr) => tr.stop());
+            const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+            recorder = null; recFor = null;
+            if (blob.size) store(person, blob); else render();
+          };
+          recorder.start();
+          setTimeout(() => { if (recorder && recFor === person.id) recorder.stop(); }, 120000); // 2 minutes at most
+          render();
+        } catch {
+          recorder = null; recFor = null;
+          say(t("micBlocked"));
+        }
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = $("#vv-name").value.trim();
+        if (!name || !$("#vv-consent").checked) { $("#vv-err").hidden = false; $("#vv-err").textContent = t("vNeed"); return; }
+        people.push({ id: uid(), name });
+        savePeople();
+        form.reset(); form.hidden = true; $("#vv-err").hidden = true; $("#vv-add-btn").hidden = false;
+        render();
+      });
+      $("#vv-add-btn").addEventListener("click", () => { form.hidden = false; $("#vv-add-btn").hidden = true; $("#vv-name").focus(); });
+      $("#vv-cancel").addEventListener("click", () => { form.reset(); form.hidden = true; $("#vv-err").hidden = true; $("#vv-add-btn").hidden = false; });
+
+      function open() {
+        lastFocus = document.activeElement;
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+        render();
+        $("#vv-close").focus();
+      }
+      function close() {
+        if (recorder) recorder.stop();
+        stopAudio();
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      $("#vv-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => { if (!sheet.hidden && e.key === "Escape") close(); });
+      $("#village-btn").addEventListener("click", open);
+
+      // Pick one of her loved ones' messages at random.
+      async function randomClip() {
+        let clips = [];
+        try { clips = await allClips(); } catch {}
+        clips = clips.filter((c) => people.some((p) => p.id === c.person));
+        return clips.length ? clips[Math.floor(Math.random() * clips.length)] : null;
+      }
+      const nameOf = (clip) => (people.find((p) => p.id === clip.person) || {}).name || "";
+      const refreshChip = () => {}; // (the welcome-screen message was removed; kept so other code needn't change)
+      onLang(() => { $("#village-btn").setAttribute("aria-label", t("vBtn")); if (!sheet.hidden) render(); });
+
+      // When she says she's tired, sad or alone, offer a voice from her village under the answer.
+      const HARD = /tired|exhaust|sad|cry|crying|overwhelm|alone|lonely|miss (my )?(mom|mum|mother|ammi|amma|maa)|can'?t do this|hard (day|night)|struggl|anxious|scared|thak|udaas|akeli|رو رہی|تھک|اداس|اکیلی|cansada|triste|sola|yorgun|üzgün|yalnız|متعبة|حزينة|وحيدة/i;
+      async function offer(question) {
+        if (!HARD.test(question)) return;
+        const clip = await randomClip();
+        if (!clip) return;
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "guide-card";
+        b.innerHTML = `<span class="guide-card-dots" aria-hidden="true"></span><span></span>`;
+        b.lastChild.textContent = t("vHear", { x: nameOf(clip) });
+        b.addEventListener("click", () => play(clip, null));
+        log.appendChild(b);
+        scrollDown();
+        // Play it on its own, gently, only once the answer is completely finished: nothing being written,
+        // read aloud or waiting to be read, for a full 1.5 seconds. Never two voices at once.
+        const started = Date.now();
+        let quietSince = 0;
+        const tryPlay = () => {
+          if (document.body.classList.contains("crisis-on")) return;          // emergency help comes first
+          if (Date.now() - started > 120000) return;                          // too late now; the card is still there
+          const talking = busy || voice.isBusy() || document.body.classList.contains("speaking") || document.body.classList.contains("listening");
+          if (talking) { quietSince = 0; return setTimeout(tryPlay, 400); }
+          if (!quietSince) quietSince = Date.now();
+          if (Date.now() - quietSince < 1500) return setTimeout(tryPlay, 300);
+          play(clip, null);
+        };
+        setTimeout(tryPlay, 800);
+      }
+      return { open, offer, saveSample, getSample, deleteSample, stopAudio };
+    })();
+
+    // ---- A loved one's voice (AI): answers read in the voice of someone she loves ----
+    // A short, clean sample is made from one of their recordings (kept on this device). For each
+    // answer, the sample and the text go to the server, which asks the Chatterbox voice model to read
+    // it in that voice. Emergency advice always uses the usual voice, and anything that fails falls back.
+    const clone = (() => {
+      const KEY = "mh-clone";
+      let state = null; // { person, name }
+      try { state = JSON.parse(localStorage.getItem(KEY) || "null"); } catch {}
+      let sampleB64 = null, queue = [], working = false, audio = null, stopped = false, fellBack = false, emergencyMode = false;
+      let pausedUntil = 0; // after the daily limit, skip straight to the usual voice for a while
+      const EMERGENCY = /emergency|hospital|ambulance|right away|immediately|go now|urgent|call (your|the|a) (doctor|midwife|maternity|local emergency|crisis)|1122|\b(115|911|112|999)\b|ایمرجنسی|ہسپتال|فوری|طوارئ|مستشفى|فوراً|urgencias|inmediatamente|acil|hastane|hemen/i;
+
+      // Turn any recording into a clean ~9 second mono WAV at 24 kHz, the way the voice model likes it.
+      async function makeSample(blobs) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Ctx();
+        const decoded = [];
+        for (const blob of blobs) {
+          try { decoded.push(await ctx.decodeAudioData(await blob.arrayBuffer())); } catch {} // skip any file the browser can't read
+        }
+        ctx.close();
+        if (!decoded.length) throw new Error("decode");
+        decoded.sort((a, b) => b.duration - a.duration); // longest first
+        const rate = 24000, want = 9, gap = Math.round(0.25 * rate);
+        const pieces = [];
+        let total = 0;
+        for (const buf of decoded) {
+          if (total >= want) break;
+          const start = Math.min(0.2, Math.max(0, buf.duration - 0.5));
+          const len = Math.min(want - total, buf.duration - start);
+          if (len < 0.8) continue;
+          const off = new OfflineAudioContext(1, Math.ceil(len * rate), rate);
+          const src = off.createBufferSource();
+          src.buffer = buf; src.connect(off.destination); src.start(0, start, len);
+          pieces.push((await off.startRendering()).getChannelData(0));
+          total += len;
+        }
+        if (total < 4.5) throw new Error("short");
+        const pcm = new Float32Array(pieces.reduce((n, p) => n + p.length, 0) + gap * (pieces.length - 1));
+        let at = 0;
+        pieces.forEach((p, i) => { pcm.set(p, at); at += p.length + (i < pieces.length - 1 ? gap : 0); }); // a quarter second pause between notes
+        let peak = 0; for (const v of pcm) peak = Math.max(peak, Math.abs(v));
+        const gain = peak > 0 ? Math.min(2, 0.8 / peak) : 1; // gentle: at most double, so noise isn't boosted into crackle
+        const view = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+        const w = (o, str) => [...str].forEach((c, i) => view.setUint8(o + i, c.charCodeAt(0)));
+        w(0, "RIFF"); view.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+        view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        w(36, "data"); view.setUint32(40, pcm.length * 2, true);
+        pcm.forEach((v, i) => view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v * gain)) * 0x7fff, true));
+        return new Blob([view], { type: "audio/wav" });
+      }
+      const toB64 = (blob) => new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).split(",")[1]);
+        r.readAsDataURL(blob);
+      });
+
+      async function enable(person, clipBlobs) {
+        const wav = await makeSample(clipBlobs); // throws "short" if all together they're under ~5 seconds
+        await village.saveSample(person.id, wav);
+        state = { person: person.id, name: person.name };
+        sampleB64 = await toB64(wav);
+        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+      }
+      async function disable() {
+        stop();
+        if (state) await village.deleteSample(state.person).catch(() => {});
+        state = null; sampleB64 = null;
+        try { localStorage.removeItem(KEY); } catch {}
+      }
+      async function ensureSample() {
+        if (!state) return false;
+        if (sampleB64) return true;
+        const blob = await village.getSample(state.person).catch(() => null);
+        if (!blob) { state = null; return false; }
+        sampleB64 = await toB64(blob);
+        return true;
+      }
+
+      // Should this text be read in the loved one's voice?
+      function usable(text) {
+        if (!state || fellBack || Date.now() < pausedUntil) return false;
+        if (/[\u0600-\u06FF]/.test(text) && /[ٹڈڑںےۓہھگچپژ]/.test(text)) return false; // Urdu: no AI voice speaks real Urdu
+        if (LANG === "ur" && /[\u0600-\u06FF]/.test(text)) return false;
+        if (document.body.classList.contains("crisis-on")) return false;
+        if (emergencyMode || EMERGENCY.test(text)) { emergencyMode = true; return false; } // once urgent, the rest of the answer stays in the usual voice
+        return true;
+      }
+
+      async function fetchAudio(text) {
+        if (!(await ensureSample())) throw new Error("no sample");
+        const res = await fetch("/api/clone-voice", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, lang: LANG, sample: sampleB64 }),
+        });
+        if (!res.ok) { const e = new Error("voice " + res.status); e.quota = res.status === 503; throw e; }
+        return URL.createObjectURL(await res.blob());
+      }
+      const playUrl = (url) => player.play(url).then(() => URL.revokeObjectURL(url));
+
+      // Read queued sentences one after another, fetching the next while the current one plays.
+      async function work(onDone) {
+        if (working) return;
+        working = true;
+        say(t("cloneLabel", { x: state.name }), true);
+        let next = null;
+        const take = () => {
+          let text = queue.shift();
+          while (queue.length && (text + " " + queue[0]).length < 220) text += " " + queue.shift(); // fewer, fuller requests
+          return text;
+        };
+        while (!stopped && (queue.length || next)) {
+          const cur = next || (queue.length ? { text: take() } : null);
+          next = null;
+          if (!cur) break;
+          try {
+            const url = await (cur.url || fetchAudio(cur.text));
+            if (stopped) break;
+            if (queue.length) { const nt = take(); next = { text: nt, url: fetchAudio(nt).catch(() => null) }; }
+            await playUrl(url);
+            if (next) { const u = await next.url; if (!u) { queue.unshift(next.text); next = null; } else next.url = Promise.resolve(u); }
+          } catch (e) {
+            // Voice service unavailable: carry on in the usual voice, and say so once.
+            fellBack = true;
+            if (e && e.quota) pausedUntil = Date.now() + 15 * 60_000;
+            say(e && e.quota ? t("cloneQuota") : t("cloneFallback"));
+            const rest = [cur.text, ...(next ? [next.text] : []), ...queue];
+            queue = []; next = null;
+            working = false;
+            onDone && onDone(rest);
+            return;
+          }
+        }
+        working = false;
+        if (!stopped) say("", true);
+        onDone && onDone([]);
+      }
+
+      function enqueue(text, onDone) { if (!text) return; stopped = false; queue.push(text); work(onDone); }
+      function stop() {
+        stopped = true; queue = [];
+        player.stop();
+        working = false;
+      }
+      function newAnswer() { stop(); stopped = false; fellBack = false; emergencyMode = false; }
+      // When the whole text is known up front, decide once: anything urgent means the usual voice throughout.
+      function checkWhole(text) { if (EMERGENCY.test(text)) emergencyMode = true; }
+
+      return {
+        get active() { return state ? { ...state } : null; },
+        enable, disable, usable, enqueue, stop, newAnswer, checkWhole,
+        isSpeaking: () => working,
+      };
+    })();
+
+
+    // ---- Emergency: one tap to call, danger signs in plain words. Works without the AI. ----
+    const emergency = (() => {
+      const sheet = $("#emergency");
+      // Well established national numbers only. lAdvice/lCrisis are non-emergency lines shown in a softer style.
+      const COUNTRIES = {
+        PK: [["lRescue", "1122"], ["lAmbulance", "115"], ["lPolice", "15"]],
+        IN: [["lEmergency", "112"], ["lAmbulance", "108"]],
+        BD: [["lEmergency", "999"]],
+        US: [["lEmergency", "911"], ["lCrisis", "988", true]],
+        CA: [["lEmergency", "911"], ["lCrisis", "988", true]],
+        MX: [["lEmergency", "911"]],
+        GB: [["lEmergency", "999"], ["lAdvice", "111", true], ["lCrisis", "116 123", true]],
+        IE: [["lEmergency", "112"], ["lCrisis", "116 123", true]],
+        AU: [["lEmergency", "000"], ["lCrisis", "13 11 14", true]],
+        AE: [["lAmbulance", "998"], ["lPolice", "999"]],
+        SA: [["lAmbulance", "997"], ["lEmergency", "911"]],
+        EG: [["lAmbulance", "123"], ["lPolice", "122"]],
+        TR: [["lEmergency", "112"]],
+        ES: [["lEmergency", "112"], ["lCrisis", "024", true]],
+        EU: [["lEmergency", "112"]],
+      };
+      const ZONES = {
+        "Asia/Karachi": "PK", "Asia/Kolkata": "IN", "Asia/Calcutta": "IN", "Asia/Dhaka": "BD",
+        "Europe/London": "GB", "Europe/Dublin": "IE", "Asia/Dubai": "AE", "Asia/Riyadh": "SA",
+        "Africa/Cairo": "EG", "Europe/Istanbul": "TR", "Europe/Madrid": "ES", "Atlantic/Canary": "ES",
+        "America/Mexico_City": "MX", "America/Toronto": "CA", "America/Vancouver": "CA", "America/Edmonton": "CA",
+        "America/Winnipeg": "CA", "America/Halifax": "CA",
+      };
+      function detect() {
+        try { const s = localStorage.getItem("mh-country"); if (s && COUNTRIES[s]) return s; } catch {}
+        const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+        if (ZONES[tz]) return ZONES[tz];
+        if (tz.startsWith("Australia/")) return "AU";
+        if (tz.startsWith("America/")) return "US";
+        if (tz.startsWith("Europe/")) return "EU";
+        const region = (navigator.language || "").split("-")[1];
+        return region && COUNTRIES[region.toUpperCase()] ? region.toUpperCase() : "EU";
+      }
+      let country = detect();
+      const name = (code) => {
+        if (code === "EU") return t("emOther") + " (112)";
+        try { return new Intl.DisplayNames([LANG], { type: "region" }).of(code); } catch { return code; }
+      };
+
+      function render() {
+        $("#em-title").textContent = t("emTitle");
+        $("#em-intro").textContent = t("emIntro");
+        $("#em-self").textContent = t("emSelf");
+        $("#em-h-mother").textContent = t("emMother");
+        $("#em-h-baby").textContent = t("emBaby");
+        $("#em-note").textContent = t("emNote");
+        $("#em-country-label").textContent = t("emCountry");
+        const calls = $("#em-calls");
+        calls.textContent = "";
+        for (const [label, num, soft] of COUNTRIES[country]) {
+          const a = document.createElement("a");
+          a.className = "em-call" + (soft ? " soft" : "");
+          a.href = "tel:" + num.replace(/\s/g, "");
+          const left = document.createElement("span");
+          left.textContent = t(label);
+          const sm = document.createElement("small");
+          sm.textContent = " " + t("emCall");
+          left.appendChild(sm);
+          const b = document.createElement("b");
+          b.textContent = num;
+          a.append(left, b);
+          calls.appendChild(a);
+        }
+        const sel = $("#em-country");
+        sel.textContent = "";
+        const codes = Object.keys(COUNTRIES).sort((a, b) => (a === "EU") - (b === "EU") || name(a).localeCompare(name(b)));
+        for (const c of codes) {
+          const o = document.createElement("option");
+          o.value = c; o.textContent = name(c); o.selected = c === country;
+          sel.appendChild(o);
+        }
+        const fill = (id, keys) => {
+          const ul = $(id);
+          ul.textContent = "";
+          keys.forEach((k) => { const li = document.createElement("li"); li.textContent = t(k); ul.appendChild(li); });
+        };
+        fill("#em-mother", ["dm1", "dm2", "dm3", "dm4", "dm5", "dm6"]);
+        fill("#em-baby", ["db1", "db2", "db3", "db4", "db5", "db6"]);
+      }
+      $("#em-country").addEventListener("change", (e) => {
+        country = e.target.value;
+        try { localStorage.setItem("mh-country", country); } catch {}
+        render();
+      });
+
+      let lastFocus = null;
+      function open() {
+        voice.stopSpeaking();
+        if (typeof village !== "undefined") village.stopAudio();
+        lastFocus = document.activeElement;
+        // close any other panel so this one is on top and alone
+        document.querySelectorAll(".sheet").forEach((sh) => { if (sh !== sheet) sh.hidden = true; });
+        sheet.hidden = false;
+        document.body.classList.add("sheet-open");
+        render();
+        sheet.querySelector(".em-call")?.focus();
+      }
+      function close() {
+        sheet.hidden = true;
+        document.body.classList.remove("sheet-open");
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      $("#em-close").addEventListener("click", close);
+      sheet.addEventListener("click", (e) => { if (e.target === sheet) close(); });
+      document.addEventListener("keydown", (e) => { if (!sheet.hidden && e.key === "Escape") close(); });
+      $("#em-btn").addEventListener("click", open);
+      $("#crisis").addEventListener("click", open);
+      onLang(() => {
+        $("#em-btn-text").textContent = t("emBtn");
+        $("#em-btn").setAttribute("aria-label", t("emBtn"));
+        if (!sheet.hidden) render();
+      });
+
+      // Medical danger words in what she wrote: offer emergency help right under the answer.
+      const DANGER = /not breathing|can'?t breathe|struggling to breathe|blue lips|turning blue|lips (are )?(blue|gr[ae]y)|seizure|convuls|\bfits?\b|unconscious|won'?t wake|can'?t wake|fainted|heavy bleeding|soaking (a |the )?pads?|clots?.*(golf|big|large)|chest pain|severe headache|blurr?y vision|fever.*(week|newborn|days? old|\b[0-9] ?months?)|(weeks?|days?|newborn).*(fever|38)|38(\.\d)? ?(c\b|°)|100\.[4-9]|سانس نہیں|ہونٹ نیلے|دورہ|بے ہوش|بہت خون|ضيق (في )?التنفس|لا يتنفس|تشنج|نزيف|فاقد الوعي|no respira|convulsi|sangrado abundante|inconsciente|nefes alam|nöbet|bilinçsiz|ağır kanama/i;
+      function offer(question) {
+        if (!DANGER.test(question)) return false;
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "guide-card em-card";
+        b.innerHTML = `<span aria-hidden="true">&#9742;</span><span></span>`;
+        b.lastChild.textContent = t("emCard");
+        b.addEventListener("click", open);
+        log.appendChild(b);
+        scrollDown();
+        return true;
+      }
+      return { open, offer };
+    })();
+
+    // Language menu in the header.
+    (() => {
+      const btn = $("#lang-btn"), menu = $("#lang-menu"), code = $("#lang-code");
+      const loadedFonts = new Set();
+      function apply() {
+        const l = LANGS.find((x) => x.id === LANG);
+        document.documentElement.lang = LANG;
+        document.documentElement.dir = l.dir;
+        code.textContent = LANG.toUpperCase();
+        btn.setAttribute("aria-label", t("language"));
+        const fonts = {
+          ur: "https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap",
+          ar: "https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&display=swap",
+        };
+        if (fonts[LANG] && !loadedFonts.has(LANG)) {
+          loadedFonts.add(LANG);
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = fonts[LANG];
+          document.head.appendChild(link);
+        }
+        $(".greeting").textContent = t("greeting");
+        $(".slogan").textContent = t("slogan");
+        input.placeholder = t("placeholder");
+        $(".disclaimer").textContent = t("disclaimer");
+        $("#crisis").textContent = t("crisis");
+        buildMenu();
+        langListeners.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+      }
+      function buildMenu() {
+        menu.textContent = "";
+        for (const x of LANGS) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.textContent = x.name;
+          b.lang = x.id;
+          b.setAttribute("aria-current", x.id === LANG ? "true" : "false");
+          b.addEventListener("click", () => { setLang(x.id); menu.hidden = true; btn.focus(); });
+          menu.appendChild(b);
+        }
+        menu.appendChild(document.createElement("hr"));
+        const vb = document.createElement("button");
+        vb.type = "button";
+        vb.textContent = "🔊 " + t("voiceMenu");
+        vb.addEventListener("click", () => { menu.hidden = true; voiceSettings.open(); });
+        menu.appendChild(vb);
+        if (window.__menuExtras) window.__menuExtras(menu);
+      }
+      function setLang(id) {
+        if (!I18N.t[id]) return;
+        LANG = id;
+        try { localStorage.setItem("mh-lang", id); } catch {}
+        apply();
+      }
+      btn.addEventListener("click", () => {
+        if (menu.hidden) buildMenu(); // rebuild on open, so items added by other features (and fresh translations) appear
+        menu.hidden = !menu.hidden;
+        if (!menu.hidden) menu.querySelector("[aria-current=true]")?.focus();
+      });
+      document.addEventListener("click", (e) => { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) menu.hidden = true; });
+      document.addEventListener("keydown", (e) => { if (!menu.hidden && e.key === "Escape") { menu.hidden = true; btn.focus(); } });
+      apply();
+    })();
+
+    videoBtn.addEventListener("click", () => guides.openList());
+
+    // After an answer, offer the matching guide right under it.
+    function offerGuide(question, answer) {
+      const gd = guides.match(question, answer);
+      if (!gd) return;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "guide-card";
+      b.innerHTML = `<span class="guide-card-dots" aria-hidden="true"></span><span></span>`;
+      b.lastChild.textContent = t("watchCard", { x: guides.titleOf(gd.id) });
+      b.addEventListener("click", () => guides.open(gd.id));
+      log.appendChild(b);
+      scrollDown();
+    }
+
+    // If she asked about a family tradition, offer the myth checker card for it.
+    function offerMyth(question) {
+      const m = myths.match(question);
+      if (!m) return false;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "guide-card";
+      b.innerHTML = `<span class="guide-card-dots" aria-hidden="true"></span><span></span>`;
+      b.lastChild.textContent = t("checkCard", { x: myths.titleOf(m) });
+      b.addEventListener("click", () => myths.open(m.id));
+      log.appendChild(b);
+      scrollDown();
+      return true;
+    }
+
+    // ...and a library article on the same topic, when there is one.
+    function offerArticle(question, answer) {
+      const art = library.match(question, answer);
+      if (!art) return;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "guide-card";
+      b.innerHTML = `<span class="guide-card-dots" aria-hidden="true"></span><span></span>`;
+      b.lastChild.textContent = art.weekly && art.week ? t("readWeek", { n: art.week }) : t("readCard", { x: library.titleOf(art) });
+      b.addEventListener("click", () => library.open(art.id, { week: art.week }));
+      log.appendChild(b);
+      scrollDown();
+    }
+
+    // Restore the conversation after a refresh
+    refreshMode();
+    try { if (sessionStorage.getItem("crisis")) document.body.classList.add("crisis-on"); } catch {}
+    history.forEach((m) => {
+      const el = addBubble(m.role, m.content);
+      if (m.role === "assistant") el.appendChild(listenButton(() => m.content));
+    });
+    if (history.length && history[history.length - 1].role === "user") requestReply();
+
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  </script>
+  <script src="/companion.js"></script>
+  <script>
+    // Dotted nursery sky. Everything is drawn by lighting up dots on one grid, like a soft LED sign:
+    // a crescent moon bobbing in the corner, stars that twinkle on and off, a baby bottle that floats
+    // across now and then, and waves rolling along the bottom. Where she touches, dots glow pink and
+    // gather; a tap sends a ripple and a little dotted heart floating up. While an answer is being
+    // written, slow ripples spread from the typing dots. Still picture if "reduce motion" is on.
+    (function nurserySky() {
+      const canvas = document.getElementById("village");
+      const ctx = canvas.getContext && canvas.getContext("2d");
+      if (!ctx) return;
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+      const darkMq = matchMedia("(prefers-color-scheme: dark)");
+
+      // ---- little dotted pictures (X = dot) ----
+      const art = (rows) => {
+        const px = [];
+        rows.forEach((line, y) => [...line].forEach((ch, x) => { if (ch === "X") px.push([x, y]); }));
+        return { px, w: rows[0].length, h: rows.length };
+      };
+      const SPARKLE = art(["..X..", "..X..", "XXXXX", "..X..", "..X.."]);
+      const TINY = art([".X.", "XXX", ".X."]);
+      const HEART = art([".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."]);
+      const BOTTLE = art([
+        "...X...",
+        "..XXX..",
+        "..XXX..",
+        ".XXXXX.",
+        ".X...X.",
+        ".XX..X.",
+        ".X...X.",
+        ".XX..X.",
+        ".X...X.",
+        ".XX..X.",
+        ".X...X.",
+        ".XXXXX.",
+      ]);
+      const MOON_SMALL = art([
+        "..XXX",
+        ".XX..",
+        "XXX..",
+        "XXX..",
+        ".XX..",
+        "..XXX",
+      ]);
+      const MOON_BIG = art([
+        "....XXXX.",
+        "..XXXX...",
+        ".XXX.....",
+        ".XXX.....",
+        "XXXX.....",
+        "XXXX.....",
+        "XXXX.....",
+        ".XXX.....",
+        ".XXX.....",
+        "..XXXX...",
+        "....XXXX.",
+      ]);
+      function crescent(r) {
+        // Inside one circle, outside a second one shifted up and right: a crescent.
+        const px = [], size = r * 2 + 1;
+        for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+          const dx = x - r, dy = y - r;
+          const inMoon = dx * dx + dy * dy <= r * r + 0.5;
+          const ox = dx - r * 0.55, oy = dy + r * 0.25;
+          const inBite = ox * ox + oy * oy <= (r * 0.85) ** 2;
+          if (inMoon && !inBite) px.push([x, y]);
+        }
+        return { px, w: size, h: size };
+      }
+
+      // ---- state ----
+      let W = 0, H = 0, gap = 26, cols = 0, rows = 0, ox = 0, oy = 0;
+      let dots = [], calm = null, light = null, tint = null, quiet = null, waveRow = 0;
+      let moon = null, stars = [], bottle = null, hearts = [], ripples = [];
+      let pal = {};
+      const pointer = { x: -9999, y: -9999, active: false };
+      let raf = 0, lastFrame = 0, lastThinkRipple = 0, nextBottleAt = 0;
+
+      const hex = (v, fb) => {
+        const h = v.trim().replace("#", "");
+        return h.length === 6 ? [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) : fb;
+      };
+      function readColors() {
+        const cs = getComputedStyle(document.documentElement);
+        pal = {
+          dot: hex(cs.getPropertyValue("--muted"), [125, 102, 96]),
+          pink: hex(cs.getPropertyValue("--ring"), [217, 167, 176]),
+          wave: hex(cs.getPropertyValue("--wave"), [196, 154, 116]),
+          moon: hex(cs.getPropertyValue("--moon"), [212, 154, 85]),
+          star: hex(cs.getPropertyValue("--star"), [217, 160, 102]),
+        };
+        pal.base = darkMq.matches ? 0.2 : 0.24;
+        pal.pic = darkMq.matches ? 0.85 : 0.8;
+      }
+
+      const rand = (a, b) => a + Math.random() * (b - a);
+
+      function placeStar(s, now) {
+        // Upper part of the screen, away from the moon.
+        for (let tries = 0; tries < 30; tries++) {
+          s.c = Math.floor(rand(1, cols - s.art.w - 1));
+          s.r = Math.floor(rand(1, Math.max(2, waveRow - s.art.h - 4)));
+          const nearMoon = moon && s.c + s.art.w > moon.c - 2 && s.c < moon.c + moon.art.w + 2 && s.r < moon.r + moon.art.h + 2;
+          const onText = s.art.px.some(([x, y]) => quiet[(s.r + y) * cols + s.c + x] < 1);
+          if (!nearMoon && !onText) break;
+        }
+        s.born = now + rand(0, 2500);
+        s.life = rand(3500, 6500);
+      }
+
+      // Text sits on top of the sky, so pictures stay faint behind headings and the typing area.
+      function measureQuiet() {
+        if (!quiet) return;
+        quiet.fill(1);
+        const pad = gap * 0.3;
+        document.querySelectorAll(".brand, .greeting, .slogan, .compose, .disclaimer, .status, .crisis").forEach((el) => {
+          const b = el.getBoundingClientRect();
+          if (!b.width || !b.height) return;
+          // Only dots whose centers fall inside the (slightly padded) text box.
+          const c0 = Math.max(0, Math.ceil((b.left - pad - ox) / gap)), c1 = Math.min(cols - 1, Math.floor((b.right + pad - ox) / gap));
+          const r0 = Math.max(0, Math.ceil((b.top - pad - oy) / gap)), r1 = Math.min(rows - 1, Math.floor((b.bottom + pad - oy) / gap) + 1);
+          for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) quiet[r * cols + c] = 0.12;
+        });
+        const bar = document.querySelector(".compose");
+        const top = bar ? bar.getBoundingClientRect().top : H;
+        const brand = document.querySelector(".brand");
+        if (moon && brand) moon.r = Math.max(1, Math.ceil((brand.getBoundingClientRect().bottom + pad - oy) / gap) + 1);
+        waveRow = Math.max(4, Math.floor((top - oy) / gap) - 2); // waves roll just above the typing box
+      }
+      setInterval(measureQuiet, 1000);
+
+      function build() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        gap = W < 600 ? 20 : 24;
+        cols = Math.floor(W / gap);
+        rows = Math.floor(H / gap);
+        ox = (W - (cols - 1) * gap) / 2;
+        oy = (H - (rows - 1) * gap) / 2;
+        const n = cols * rows;
+        dots = new Array(n);
+        calm = new Float32Array(n);
+        light = new Float32Array(n);
+        tint = new Uint8Array(n);
+        quiet = new Float32Array(n).fill(1);
+        const wide = W > 760;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const i = r * cols + c, x = ox + c * gap, y = oy + r * gap;
+          dots[i] = { hx: x, hy: y, x, y, glow: 0 };
+          // On wide screens, keep the reading column a little quieter than the edges.
+          const fromCol = Math.max(0, Math.abs(x - W / 2) - 300);
+          calm[i] = wide ? 0.5 + 0.5 * Math.min(1, fromCol / 160) : 1;
+        }
+        const now = performance.now();
+        const mArt = W < 600 ? MOON_SMALL : MOON_BIG;
+        moon = { art: mArt, c: cols - mArt.w - (W < 600 ? 1 : 3), r: 2 };
+        measureQuiet();
+        const count = W < 600 ? 5 : 9;
+        stars = Array.from({ length: count }, (_, k) => {
+          const s = { art: k % 2 === 0 ? SPARKLE : TINY, phase: rand(0, 6.28) };
+          placeStar(s, now);
+          s.born = now - rand(0, s.life); // start mid-twinkle so the sky isn't empty at first
+          return s;
+        });
+        bottle = null;
+        nextBottleAt = now + 2500;
+      }
+
+      // Light up the dots under a picture. kind: 1 pink, 2 moon, 3 star
+      function stamp(a, c0, r0, alpha, kind) {
+        if (alpha <= 0.01) return;
+        for (const [x, y] of a.px) {
+          const c = Math.round(c0 + x), r = Math.round(r0 + y);
+          if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+          const i = r * cols + c;
+          if (alpha > light[i]) { light[i] = alpha; tint[i] = kind; }
+        }
+      }
+
+      function addRipple(x, y, strength) {
+        ripples.push({ x, y, born: performance.now(), strength });
+        if (ripples.length > 6) ripples.shift();
+      }
+
+      function thinkingOrigin() {
+        const el = document.querySelector(".typing") || document.querySelector(".talk");
+        if (el) {
+          const b = el.getBoundingClientRect();
+          if (b.width) return [b.left + b.width / 2, b.top + b.height / 2];
+        }
+        return [W / 2, H / 2];
+      }
+
+      function compose(now, still) {
+        const t = now / 1000;
+        light.fill(0);
+        tint.fill(0);
+
+        // Moon: bobs one dot up and down, slowly.
+        // Gently drops one dot and back (on phones it sways sideways, since there's less room above the title).
+        const sway = still ? 0 : Math.round((Math.sin(t * 0.6) + 1) / 2);
+        const bob = W < 600 ? 0 : sway;
+        const side = W < 600 ? -sway : 0;
+        stamp(moon.art, moon.c + side, moon.r + bob, pal.pic, 2);
+
+        // Stars: fade in, twinkle, fade out, reappear somewhere else.
+        for (const s of stars) {
+          if (still) { stamp(s.art, s.c, s.r, pal.pic * 0.8, 3); continue; }
+          const age = now - s.born;
+          if (age < 0) continue;
+          if (age > s.life) { placeStar(s, now); continue; }
+          const fade = Math.min(1, age / 900, (s.life - age) / 900);
+          const twinkle = 0.75 + 0.25 * Math.sin(t * 3 + s.phase);
+          stamp(s.art, s.c, s.r, pal.pic * fade * twinkle, 3);
+        }
+
+        // Bottle: now and then it floats across, bobbing like a little boat.
+        if (!still) {
+          if (!bottle && now > nextBottleAt) {
+            const ltr = Math.random() < 0.5;
+            bottle = {
+              c: ltr ? -BOTTLE.w : cols,
+              r: Math.floor(rows * rand(0.5, 0.62)),
+              v: (ltr ? 1 : -1) * (W < 600 ? 1.6 : 2.2), // dots per second
+              last: now,
+            };
+          }
+          if (bottle) {
+            bottle.c += (bottle.v * (now - bottle.last)) / 1000;
+            bottle.last = now;
+            stamp(BOTTLE, bottle.c, bottle.r + Math.round(Math.sin(t * 1.4)), pal.pic, 4);
+            if (bottle.c > cols + 1 || bottle.c < -BOTTLE.w - 1) {
+              bottle = null;
+              nextBottleAt = now + rand(7000, 13000);
+            }
+          }
+        }
+
+        // Hearts from taps float upward and fade.
+        hearts = hearts.filter((h) => now - h.born < 2600);
+        for (const h of hearts) {
+          const age = (now - h.born) / 1000;
+          stamp(HEART, h.c, h.r - age * 2.4, pal.pic * (1 - age / 2.6), 1);
+        }
+
+        // Waves along the bottom: two soft rolling lines of dots.
+        const lit = (c, y, a) => {
+          if (y < 0 || y >= rows) return;
+          const i = y * cols + c;
+          if (a > light[i]) { light[i] = a; tint[i] = 4; }
+        };
+        for (let c = 0; c < cols; c++) {
+          const y1 = waveRow - 3 + Math.round(Math.sin(c * 0.3 + (still ? 0 : t * 0.9)) * 2);
+          const y2 = waveRow + Math.round(Math.sin(c * 0.24 - (still ? 0 : t * 0.7) + 1.5) * 1.5);
+          lit(c, y1, 0.62); lit(c, y1 + 1, 0.28);
+          lit(c, y2, 0.42); lit(c, y2 + 1, 0.2);
+        }
+      }
+
+      function frame(now) {
+        raf = requestAnimationFrame(frame);
+        if (now - lastFrame < 33) return; // ~30 fps is plenty, and kinder to phone batteries
+        lastFrame = now;
+        const t = now / 1000;
+
+        if (document.body.classList.contains("thinking") && now - lastThinkRipple > 2400) {
+          lastThinkRipple = now;
+          const [x, y] = thinkingOrigin();
+          addRipple(x, y, 0.55);
+        }
+        const speed = 300, maxR = Math.hypot(W, H);
+        ripples = ripples.filter((r) => ((now - r.born) / 1000) * speed < maxR);
+
+        compose(now, false);
+        draw(now, t, true);
+      }
+
+      function mix(a, b, k) {
+        return `${Math.round(a[0] + (b[0] - a[0]) * k)},${Math.round(a[1] + (b[1] - a[1]) * k)},${Math.round(a[2] + (b[2] - a[2]) * k)}`;
+      }
+
+      function draw(now, t, live) {
+        ctx.clearRect(0, 0, W, H);
+        const reach = W < 600 ? 120 : 160, speed = 300, maxR = Math.hypot(W, H);
+        const kindColor = [pal.pink, pal.pink, pal.moon, pal.star, pal.wave]; // 1 heart, 2 moon, 3 star, 4 wave/bottle
+
+        for (let i = 0; i < dots.length; i++) {
+          const d = dots[i];
+          let tx = d.hx, ty = d.hy, glowTarget = 0;
+
+          if (live) {
+            if (pointer.active) {
+              const dx = pointer.x - d.hx, dy = pointer.y - d.hy, dist = Math.hypot(dx, dy);
+              if (dist < reach) {
+                const f = (1 - dist / reach) ** 2;
+                tx += (dx / (dist || 1)) * f * 12;
+                ty += (dy / (dist || 1)) * f * 12;
+                glowTarget = f;
+              }
+            }
+            for (const r of ripples) {
+              const radius = ((now - r.born) / 1000) * speed;
+              const dx = d.hx - r.x, dy = d.hy - r.y, dist = Math.hypot(dx, dy);
+              const band = Math.abs(dist - radius);
+              if (band < 34) {
+                const f = (1 - band / 34) * Math.max(0, 1 - radius / (maxR * 0.7)) * r.strength;
+                tx += (dx / (dist || 1)) * f * 7;
+                ty += (dy / (dist || 1)) * f * 7;
+                glowTarget = Math.max(glowTarget, f * 0.9);
+              }
+            }
+            d.x += (tx - d.x) * 0.12;
+            d.y += (ty - d.y) * 0.12;
+            d.glow += (glowTarget - d.glow) * (glowTarget > d.glow ? 0.25 : 0.06);
+          }
+
+          const pic = light[i] * calm[i] * quiet[i];
+          const g = d.glow;
+          if (pic > 0.02 || g > 0.03) {
+            // Part of a picture, or glowing near her finger.
+            const base = pic >= g ? kindColor[tint[i]] : pal.pink;
+            const a = Math.min(1, Math.max(pic, g * 0.9));
+            ctx.fillStyle = `rgba(${mix(pal.dot, base, Math.min(1, Math.max(pic, g) * 1.2))},${a})`;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, 1.5 + Math.max(pic, g) * 1.6, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            const breath = live ? 0.8 + 0.2 * Math.sin((t / 5) * Math.PI * 2 - Math.hypot(d.hx - W / 2, d.hy - H / 2) * 0.008) : 1;
+            ctx.fillStyle = `rgba(${pal.dot[0]},${pal.dot[1]},${pal.dot[2]},${pal.base * breath * calm[i]})`;
+            ctx.fillRect(d.x - 1, d.y - 1, 2, 2);
+          }
+        }
+      }
+
+      function drawStill() {
+        compose(performance.now(), true);
+        draw(0, 0, false);
+      }
+
+      function start() {
+        cancelAnimationFrame(raf);
+        if (reduce.matches) return drawStill();
+        if (!document.hidden) raf = requestAnimationFrame(frame);
+      }
+
+      // Pointer: mouse, finger, or pen. Listening on window means it works over the chat too.
+      const move = (e) => { pointer.x = e.clientX; pointer.y = e.clientY; pointer.active = true; };
+      window.addEventListener("pointermove", move, { passive: true });
+      window.addEventListener("pointerdown", (e) => {
+        move(e);
+        if (reduce.matches) return;
+        addRipple(e.clientX, e.clientY, 1);
+        hearts.push({ c: Math.round((e.clientX - ox) / gap) - 3, r: Math.round((e.clientY - oy) / gap) - 3, born: performance.now() });
+        if (hearts.length > 4) hearts.shift();
+      }, { passive: true });
+      window.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") pointer.active = false; }, { passive: true });
+      window.addEventListener("pointercancel", () => { pointer.active = false; }, { passive: true });
+      document.addEventListener("pointerleave", () => { pointer.active = false; });
+      window.addEventListener("blur", () => { pointer.active = false; });
+
+      // Zooming changes both the size and the pixel density. Rebuild right away, and again once
+      // the zoom settles, so the sky never looks stretched or blurry and never needs a reload.
+      let resizeTimer;
+      const rebuild = () => { build(); if (reduce.matches) drawStill(); };
+      const onResize = () => { rebuild(); clearTimeout(resizeTimer); resizeTimer = setTimeout(rebuild, 150); };
+      window.addEventListener("resize", onResize);
+      window.visualViewport?.addEventListener("resize", onResize);
+      (function watchDensity() {
+        const mq = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+        mq.addEventListener?.("change", () => { onResize(); watchDensity(); }, { once: true });
+      })();
+      document.addEventListener("visibilitychange", () => (document.hidden ? cancelAnimationFrame(raf) : start()));
+      darkMq.addEventListener?.("change", () => { readColors(); if (reduce.matches) drawStill(); });
+      reduce.addEventListener?.("change", start);
+
+      readColors();
+      build();
+      start();
+    })();
+  </script>
+</body>
+</html>
