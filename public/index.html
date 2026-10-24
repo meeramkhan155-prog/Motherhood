@@ -10,6 +10,10 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Motherhood">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Motherhood">
@@ -328,10 +332,13 @@
     .guide-name { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 19px; }
     .guide-blurb { color: var(--muted); font-size: 15px; }
     .guide-player { text-align: center; }
-    #guide-canvas {
-      width: min(300px, 78vw); aspect-ratio: 1; display: block; margin: 4px auto 8px;
-      background: var(--bg); border-radius: 20px;
+    .guide-stage {
+      position: relative; width: min(300px, 78vw); aspect-ratio: 1; margin: 4px auto 8px;
+      background: var(--bg); border-radius: 20px; overflow: hidden;
     }
+    #guide-canvas, #guide-3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #guide-3d { visibility: hidden; }
+    .guide-stage.is-3d #guide-3d { visibility: visible; }
     .guide-step { margin: 0; color: var(--muted); font-size: 14px; }
     .guide-caption {
       margin: 6px auto 14px; max-width: 34ch; min-height: 3.2em;
@@ -634,6 +641,7 @@
     .today-card:focus-visible, .mood-opt:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
     #msg::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     @media (max-width: 420px) { .compose .icon-btn { width: 40px; height: 40px; } .compose { gap: 6px; } }
+    @media (max-width: 380px) { .compose .icon-btn { width: 36px; height: 36px; } .compose { gap: 4px; } #msg { padding-inline: 12px; } }
     @media (prefers-reduced-motion: reduce) {
       *, *::after { animation: none !important; transition: none !important; }
     }
@@ -811,7 +819,10 @@
       </header>
       <div id="guide-list" class="guide-list"></div>
       <div id="guide-player" class="guide-player" hidden>
-        <canvas id="guide-canvas" aria-hidden="true"></canvas>
+        <div class="guide-stage" id="guide-stage">
+          <canvas id="guide-3d" aria-hidden="true"></canvas>
+          <canvas id="guide-canvas" aria-hidden="true"></canvas>
+        </div>
         <p class="guide-step" id="guide-step"></p>
         <p class="guide-caption" id="guide-caption" aria-live="polite"></p>
         <div class="listen-row" id="guide-listen"></div>
@@ -2034,6 +2045,8 @@
       const prevBtn = $("#guide-prev"), nextBtn = $("#guide-next"), ytLink = $("#guide-yt"), titleEl = $("#guide-title");
       const S = 240;
       const ctx = canvas.getContext("2d");
+      const stage = $("#guide-stage");
+      const scratch = Object.assign(document.createElement("canvas"), { width: 240, height: 240 }).getContext("2d");
       const reduce = matchMedia("(prefers-reduced-motion: reduce)");
       const darkMq = matchMedia("(prefers-color-scheme: dark)");
       let current = null, step = 0, raf = 0, startedAt = 0, lastFrame = 0, lastFocus = null;
@@ -2094,11 +2107,22 @@
         if (canvas.width !== px || canvas.height !== px) canvas.width = canvas.height = px;
         ctx.setTransform(px / S, 0, 0, px / S, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.fillStyle = col.bg;
-        ctx.fillRect(0, 0, S, S);
-        ctx.save();
-        const labels = current.steps[step].draw(ctx, p, t) || [];
-        ctx.restore();
+        // 3D clay scenes when Three.js and WebGL are available; the 2D drawings otherwise.
+        const use3d = !!(window.Guides3D && window.Guides3D.has(current.id, step));
+        stage.classList.toggle("is-3d", use3d);
+        let labels;
+        if (use3d) {
+          ctx.clearRect(0, 0, S, S);
+          try { window.Guides3D.render(current.id, step, p, t, size, dpr, reduce.matches); }
+          catch (e) { console.warn("3D guide failed, using 2D", e); window.Guides3D = null; }
+          labels = current.steps[step].draw(scratch, p, t) || []; // labels come from the 2D step
+        } else {
+          ctx.fillStyle = col.bg;
+          ctx.fillRect(0, 0, S, S);
+          ctx.save();
+          labels = current.steps[step].draw(ctx, p, t) || [];
+          ctx.restore();
+        }
 
         // labels fade in once the movement has happened
         if (p > 0.35 || reduce.matches) {
@@ -3377,6 +3401,8 @@
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
   </script>
   <script src="/companion.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <script src="/guides3d.js" defer></script>
   <script>
     // Dotted nursery sky. Everything is drawn by lighting up dots on one grid, like a soft LED sign:
     // a crescent moon bobbing in the corner, stars that twinkle on and off, a baby bottle that floats
@@ -3641,6 +3667,7 @@
       }
 
       function frame(now) {
+        if (stopped) return;
         raf = requestAnimationFrame(frame);
         if (now - lastFrame < 33) return; // ~30 fps is plenty, and kinder to phone batteries
         lastFrame = now;
@@ -3720,8 +3747,11 @@
         draw(0, 0, false);
       }
 
+      let stopped = false; // set when the 3D sky takes over
+      window.__stopSky2d = () => { stopped = true; cancelAnimationFrame(raf); canvas.style.display = "none"; };
       function start() {
         cancelAnimationFrame(raf);
+        if (stopped) return;
         if (reduce.matches) return drawStill();
         if (!document.hidden) raf = requestAnimationFrame(frame);
       }
@@ -3744,7 +3774,7 @@
       // Zooming changes both the size and the pixel density. Rebuild right away, and again once
       // the zoom settles, so the sky never looks stretched or blurry and never needs a reload.
       let resizeTimer;
-      const rebuild = () => { build(); if (reduce.matches) drawStill(); };
+      const rebuild = () => { if (stopped) return; build(); if (reduce.matches) drawStill(); };
       const onResize = () => { rebuild(); clearTimeout(resizeTimer); resizeTimer = setTimeout(rebuild, 150); };
       window.addEventListener("resize", onResize);
       window.visualViewport?.addEventListener("resize", onResize);

@@ -1,7 +1,7 @@
 // Service worker: lets the app install to the home screen and open fast.
 // Chat requests are never cached; answers always come live.
-const CACHE = "motherhood-v4"; // bump this whenever you change files in /public
-const SHELL = ["/", "/library.js", "/i18n.js", "/myths.js", "/companion.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "motherhood-v7"; // bump this whenever you change files in /public
+const SHELL = ["/", "/library.js", "/i18n.js", "/myths.js", "/companion.js", "/guides3d.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
